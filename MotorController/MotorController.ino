@@ -1,25 +1,13 @@
-/******************************************************************************
-TestRun.ino
-TB6612FNG H-Bridge Motor Driver Example code
-Michelle @ SparkFun Electronics
-8/20/16
-https://github.com/sparkfun/SparkFun_TB6612FNG_Arduino_Library
+/* (26.05.18) Dieses Programm steuert den MKR1000 in unserem Projekt, welcher den Motor hoch und runter bewegt */
+//hoch runter: (02.06.18) Die Befehle für den SparkFun Treiber hinzugefügt: funktioniert nocht nicht
+//Wert von Sludgeabstand übergeben sodass Runter blockiert wird, sobald sludge zu nahe: funktioniert noch nicht
 
-Uses 2 motors to show examples of the functions in the library.  This causes
-a robot to do a little 'jig'.  Each movement has an equal and opposite movement
-so assuming your motors are balanced the bot should end up at the same place it
-started.
+#define BLYNK_PRINT SerialUSB
 
-Resources:
-TB6612 SparkFun Library
 
-Development environment specifics:
-Developed on Arduino 1.6.4
-Developed with ROB-9457
-******************************************************************************/
-
-// This is the library for the TB6612 that contains the class Motor and all the
-// functions
+#include <SPI.h>
+#include <WiFi101.h>
+#include <BlynkSimpleWiFiShield101.h>
 #include <SparkFun_TB6612.h>
 
 // Pins for all inputs, keep in mind the PWM defines must be on PWM pins
@@ -33,7 +21,10 @@ Developed with ROB-9457
 #define PWMB 6
 #define STBY 5
 
-// these constants are used to allow you to make your motor configuration 
+int pinValueup = 0;
+int pinValuedown = 0;
+
+// these constants are used to allow you to make your motor configuration
 // line up with function names like forward.  Value can be 1 or -1
 const int offsetA = 1;
 const int offsetB = 1;
@@ -43,61 +34,50 @@ const int offsetB = 1;
 // that take 2 motors as arguements you can either write new functions or
 // call the function more than once.
 Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
-//Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
+
+// You should get Auth Token in the Blynk App.
+// Go to the Project Settings (nut icon).
+char auth[] = "f0f810652e194433a96d4e4a81e96ab0";
+
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "Ammandips iPhone Neu"; //"qkn-11345"
+char pass[] = "guggi113"; //"8z2m-lygk-zhfg-i00y"
+
+// This function will be called every time Slider Widget
+// in Blynk app writes values to the Virtual Pin V0
+BLYNK_WRITE(V0)
+{
+  pinValueup = param.asInt(); // assigning incoming value from pin V0 to a variable
+
+  // process received value
+}//BLYNK_WRITE(V0)end
+
+// This function will be called every time Slider Widget
+// in Blynk app writes values to the Virtual Pin V1
+BLYNK_WRITE(V1)
+{
+  pinValuedown = param.asInt(); // assigning incoming value from pin V1 to a variable
+
+  // process received value
+}//BLYNK_WRITE(V1)end
 
 void setup()
 {
- //Nothing here
-}
-
+  Blynk.begin(auth, ssid, pass);
+}//setupend
 
 void loop()
 {
-   //Use of the drive function which takes as arguements the speed
-   //and optional duration.  A negative speed will cause it to go
-   //backwards.  Speed can be from -255 to 255.  Also use of the 
-   //brake function which takes no arguements.
-   motor1.drive(255,500);
-   motor1.drive(-255,500);
-   motor1.brake();
-   delay(1000);
-   
-//   //Use of the drive function which takes as arguements the speed
-//   //and optional duration.  A negative speed will cause it to go
-//   //backwards.  Speed can be from -255 to 255.  Also use of the 
-//   //brake function which takes no arguements.
-//   motor2.drive(255,1000);
-//   motor2.drive(-255,1000);
-//   motor2.brake();
-//   delay(1000);
-//   
-//   //Use of the forward function, which takes as arguements two motors
-//   //and optionally a speed.  If a negative number is used for speed
-//   //it will go backwards
-//   forward(motor1, motor2, 150);
-//   delay(1000);
-//   
-//   //Use of the back function, which takes as arguments two motors 
-//   //and optionally a speed.  Either a positive number or a negative
-//   //number for speed will cause it to go backwards
-//   back(motor1, motor2, -150);
-//   delay(1000);
-//   
-//   //Use of the brake function which takes as arguments two motors.
-//   //Note that functions do not stop motors on their own.
-//   brake(motor1, motor2);
-//   delay(1000);
-//   
-//   //Use of the left and right functions which take as arguements two
-//   //motors and a speed.  This function turns both motors to move in 
-//   //the appropriate direction.  For turning a single motor use drive.
-//   left(motor1, motor2, 100);
-//   delay(1000);
-//   right(motor1, motor2, 100);
-//   delay(1000);
-//   
-//   //Use of brake again.
-//   brake(motor1, motor2);
-//   delay(1000);
-   
-}
+  Blynk.run();
+  if (pinValueup == 1) {
+    motor1.drive(255,1);
+  }//ifpinValueup=1end
+  if (pinValuedown == 1) {
+    motor1.drive(-255);
+  }//ifpinValuedown=1end
+  else {
+    motor1.brake();
+  }//elseend
+}//loopend
+
