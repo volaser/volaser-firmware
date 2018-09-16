@@ -1,7 +1,4 @@
-/* Im Vergleic zu Schlussprogramm 2 habe ich in Schlussprogramm 3 versucht die genauen Messungen zu erhalten und nur den Wert der Lasermessung
-  nicht in der While-Schleife zurück zu geben, sondern als Wert der dann individuell in verschiedenen Arrays gespeichert werden kann.
-  Die genauen Messungen werden im Array gespeichert, das Problem ist allerdings, dass Serial.print nur 2 Kommastellen ausgeben kann
-  Zudem habe ich das Flächenberechnungsprogramm integriert.*/
+/* Im Vergleic zu Schlussprogramm 3 habe ich in Schlussprogramm 4 das ganze Programm zu nur 4 Schritten zusammengefasst.*/
 
 HardwareSerial Serial1(1);                                            // Macht einen HardwareSerial für Laser 1
 HardwareSerial Serial2(2);                                            // Macht einen HardwareSerial für Laser 2
@@ -23,17 +20,14 @@ int z = 0;
 int n = 2;                                                            // Im Moment nicht nötig: Für For-Schleife um das Minimum zu finden
 int m = 0;                                                            // Im Moment nicht nötig: Für For-Schleife um das Minimum zu printen
 int ort = 100;
-int zaehler = 9;
-int count = 0;
-//float messwert = 0;
+int zaehler = 10;
 const float pi = 3.141;
-static float messungen[20] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};         // Generieren des Arrays um die Messungen einzutragen
+static float messungen[30] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30};         // Generieren des Arrays um die Messungen einzutragen
 static float messungenn[3] = {1, 2, 3};
 String sensorRead;                                                    // Variable um zu überprüfen, dass alle Daten vom Laser übertragen wurden
 String sensorReadn;
 char incomingByte = 0;                                                // Variable um die einzelnen Schritte auszulösen
 
-int state = 0;
 void setup() {
 
   Serial.begin(57600);                                                // Öffnen der seriellen Kommunikation mit dem Computer
@@ -67,197 +61,6 @@ void setup() {
 
 }//setupend
 
-void loop() { // run over and over
-  //
-  //  while (Serial1.available()) {                                       // Wartet bis Serial input von Laser 1 vorhanden ist
-  //    char input = Serial1.read();                                      // Schreibt die vorhandene Information der Variable input zu
-  //    if (input != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
-  //      sensorRead += input;                                            // der String sensorRead mit den inputs gefüllt
-  //    } else {
-  //      break;
-  //    } //elseend
-  //  }//whileend
-
-  if (state == 0) {
-    while (Serial2.available()) {                                        // Wartet bis Serial input von Laser 1 vorhanden ist
-      char inputn = Serial2.read();                                      // Schreibt die vorhandene Information der Variable input zu
-      if (inputn != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
-        sensorReadn += inputn;                                           // der String sensorRead mit den inputs gefüllt
-      } else {
-        break;
-      } //elseend
-    }//whileend
-
-    if (counter > 10) {
-
-      state == 1;
-    }
-  }
-
-  if() {
-
-  
-  }
-
-  //  char seperator1 = ' ';                                              // separator1 entspricht dem Leehrzeichen
-  //  char seperator2 = '.';                                              // separator2 entspricht dem Punkt
-  //  char seperator3 = 'm';                                              // separator3 entspricht dem m nach der Messung
-  //  int index1 = sensorRead.indexOf(seperator1);                        // index1 gibt die Stelle des separator1 im String an
-  //  int index2 = sensorRead.indexOf(seperator2);                        // index2 gibt die Stelle des separator2 im String an
-  //  int index3 = sensorRead.indexOf(seperator3);                        // index3 gibt die Stelle des separator3 im String an
-  //  String firstString = sensorRead.substring(index1 + 1, index2);      // generiert einen neuen String firstString beginnend von index1 + 1 bis index2
-  //  String secondString = sensorRead.substring(index2 + 1, index3);         // generiert einen neuen String secondString beginnend von index2 bis index3
-  //  char buf[20] = "";                                                  // generiert einen leeren char array von Länge 20
-  //  firstString.toCharArray(buf, 20);                                   // der String firstString wird zu einem Charstring transformiert und in buf geschrieben
-  //  float distance = atof(buf);                                         // der char string buf wird in einen float umgewandelt und in der Variable distance gespeichert
-  //  char bufzwei[20] = "";                                              // generiert einen leeren char array von Länge 20
-  //  secondString.toCharArray(bufzwei, 20);                               // der String secondString wird zu einem Charstring transformiert und in bufzwei geschrieben
-  //  float distancezwei = atof(bufzwei);                                 // der char string bufzwei wird in einen float umgewandelt und in der Variable distancezwei gespeichert
-  //  float gesamtdistance = distance + 0.001 * distancezwei;             // die zwei Einzelstrings werden wieder zu einer gesamtdistanz zusammengesetzt
-  //  if (gesamtdistance != 0) {                                          // Wenn der Wert von gesamtdistance nicht gleich 0 ist,
-  //    Serial.println(distance);
-  //    Serial.println(distancezwei);
-  //    Serial.println(gesamtdistance);
-  //    messungen[y] = gesamtdistance;                                    // wird sie an der Stelle y in den array messungen geschrieben
-  //    Serial.println(messungen[y]);
-  //    y++;
-  //  }
-  //  sensorRead = "";                                                    // Der String sensorRead wird wieder auf Null gesetzt
-
-  //
-  //  int index1n = sensorReadn.indexOf(seperator1);                      // index1n gibt die Stelle des separator1 im String an
-  //  int index2n = sensorReadn.indexOf(seperator2);                      // index2n gibt die Stelle des separator2 im String an
-  //  String firstStringn = sensorReadn.substring(index1n + 1, index2n);  // generiert einen neuen String firstString beginnend von index1n + 1 bis index2n
-  //  char bufn[20] = "";                                                 // generiert einen leeren char array von Länge 20
-  //  firstStringn.toCharArray(bufn, 20);                                 // der String firstStringn wird zu einem Charstring transformiert und in buf geschrieben
-  //  float distancen = atof(bufn);                                       // der char string bufn wird in einen float umgewandelt und in der Variable distance gespeichert
-  //  if (distancen != 0) {                                               // Wenn der Wert von distancen nicht gleich 0 ist,
-  //    messungenn[z] = distancen;                                        // wird sie an der Stelle z in den array messungenn geschrieben
-  //    Serial.println(messungenn[z]);
-  //    z++;
-  //  }
-  //
-  //  sensorReadn = "";                                                   // Der String sensorReadn wird wieder auf Null gesetzt
-
-  if (Serial.available() > 0) {                                       // Abfragen ob eine Eingabe über Serial
-    incomingByte = Serial.read();                                     // Wenn ja, wird der Wert in die Variable incomingByte geschrieben
-
-    if (incomingByte == 'M') {
-      //      messung(1);                                           //Senden Messbefehl an Laser 1
-      //      float eins = resultat(1);
-      //      float zwei = resultat(1);
-      //      Serial.print("eins: ");
-      //      Serial.println(eins);
-      //      Serial.print("zwei: ");
-      //      Serial.println(zwei);
-      messungen[y] = messung(1);
-      Serial.print("messungen[y]: ");
-      Serial.println(messungen[y]);
-      y++;
-      sensorRead = "";                                                    // Der String sensorRead wird wieder auf Null gesetzt
-      incomingByte = 0;
-    }//ifendM
-
-    if (incomingByte == 'N') {
-      Serial2.write("D");                                             //Senden Messbefehl an Laser 2
-    }//ifendN
-
-    if (incomingByte == 'D') {
-      drehung(aschritte, 0);
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifendD
-
-    if (incomingByte == 'P') {                                        // Printen des Arrays messungen
-      printen(messungen, 10);
-      incomingByte = 0;
-    }//ifendP
-
-    if (incomingByte == 'Q') {                                        // Printen des Arrays messungen
-      printen(messungenn, 3);
-      incomingByte = 0;
-    }//ifendP
-
-    if (incomingByte == 'F') {                                        // Suchen des Minimums des Arrays messungen
-      minimumfinden(messungen, 10);
-      Serial.print(ort);
-      incomingByte = 0;
-    }//ifendF
-
-    if (incomingByte == 'G') {                                        // Suchen des Minimums des Arrays messungen
-      minimumfinden(messungenn, 3);
-      incomingByte = 0;
-    }//ifendF
-
-    if (incomingByte == 'S' && ort <= 9) {
-      if (ort <= 4) {
-        for (int i = 0; i <= ort - 1; i++) { //müsste geändert werden, i <= ort
-          drehung(aschritte, 0);
-        }//forortschleife
-        int halbschritt = aschritte / 2;  //muss ich eventuell wegnehmen, wenn ich anderst mache
-        drehung(halbschritt, 0);
-      }//ifort1end
-
-      if (ort > 4) {
-        int ortlinks = 8 - ort;  //müsste auf 9-ort geändert werden
-        for (int j = 0; j < ortlinks; j++) {
-          drehung(aschritte, 1);
-        }//forortschleife
-        int halbschritt = aschritte / 2; //muss ich eventuell wegnehmen, wenn ich anderst mache
-        drehung(halbschritt, 1);
-      }//ifort2end
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifSend
-
-    if (incomingByte == 'K') {
-      drehung (2, 0);
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifKend
-
-    if (incomingByte == 'L') {
-      drehung (2, 1);
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifLend
-
-    if (incomingByte == 'V') {
-      vergleichen(messungen, 20);
-    }//ifVend
-
-    if (incomingByte == 'E') {
-      if (ort <= 4) {
-        Serial.println("Messung Laser");                              // Messung an kürzester Stelle
-        drehung(50, 1);                                               // Drehung um 90 Grad
-        Serial.println("Messung Laser");                              // Messung an 90 Grad Stelle
-        drehung(35, 1);                                               // Drehung um 63 Grad
-        Serial.println("Messung Laser");                              // 1 Messung zum Erkennen der Geometrie
-        drehung(15, 1);                                               // Drehung zu 180 Grad
-        Serial.println("Messung Laser");                              // Messung an 180 Grad Stelle
-        drehung(15, 1);                                               // Drehung um 27 Grad
-        Serial.println("Messung Laser");                              // 2 Messung zum Erkennen der Geometrie
-        drehung(35, 1);                                               // Drehung zu 270 Grad
-        Serial.println("Messung Laser");                              // Messung an 270 Grad Stelle
-      }//ifort1end
-
-      if (ort > 4) {
-        Serial.println("Messung Laser");                              // Messung an kürzester Stelle
-        drehung(50, 0);                                               // Drehung um 90 Grad
-        Serial.println("Messung Laser");                              // Messung an 90 Grad Stelle
-        drehung(35, 0);                                               // Drehung um 63 Grad
-        Serial.println("Messung Laser");                              // 1 Messung zum Erkennen der Geometrie
-        drehung(15, 0);                                               // Drehung zu 180 Grad
-        Serial.println("Messung Laser");                              // Messung an 180 Grad Stelle
-        drehung(15, 0);                                               // Drehung um 27 Grad
-        Serial.println("Messung Laser");                              // 2 Messung zum Erkennen der Geometrie
-        drehung(35, 0);                                               // Drehung zu 270 Grad
-        Serial.println("Messung Laser");                              // Messung an 270 Grad Stelle
-      }//ifort2end
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifEend
-
-  }//ifendserialavailable
-}//loopend
-
-
-
 void drehung(int schritte, int richtung) {
   if ( richtung == 0) {
     digitalWrite(dirPin, HIGH);                                     // Enables the motor to move in a particular direction
@@ -281,8 +84,8 @@ void drehung(int schritte, int richtung) {
   }//ifend
 }//drehungend
 
-void printen(float messergebnisse[], int laenge) {
-  for (int i = 0; i < laenge; i++) {
+void printen(float messergebnisse[], int laenge, int start) {
+  for (int i = start; i < laenge; i++) {
     Serial.print(messergebnisse[i]);
     Serial.print(' ');
   }//forend
@@ -303,71 +106,247 @@ void minimumfinden(float messergebnisse[], int laenge) {
       Serial.print(messungen[x]);
     }//ifend
   }//forend
-}//minimumfindenend
+}
 
 void vergleichen(float messergebnisse[], int laenge) {
   if (zaehler <= laenge) {
     if (messergebnisse[zaehler + 1] < messergebnisse[zaehler]) {
       Serial.println("Neue Messung kürzer als vorherige");
-    } //ifzweitemessungkürzeralsersteend
+    }
     if (messergebnisse[zaehler + 1] > messergebnisse[zaehler]) {
       Serial.println("Neue Messung länger als vorherige");
-    } //ifzweitemessunglängeralsersteend
-    zaehler++;
-  } //ifzaehlerkleineralslaengeend
-}//vergleichenend
-
-float messung(int Laser) {
-  while (count < 10) {
-    if (Laser == 1) {
-      Serial1.write("D");
-      Laser = 0;
-    }//laser1end
-    if (Laser == 2) {
-      Serial2.write("D");
-      Laser = 0;
-    }//laser2end
-
-    while (Serial1.available()) {                                       // Wartet bis Serial input von Laser 1 vorhanden ist
-      char input = Serial1.read();                                      // Schreibt die vorhandene Information der Variable input zu
-      if (input != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
-        sensorRead += input;                                            // der String sensorRead mit den inputs gefüllt
-      } else {
-        break;
-      } //elseend
-    }//whileend
-
-    char seperator1 = ' ';                                              // separator1 entspricht dem Leehrzeichen
-    char seperator2 = 'm';                                              // separator2 entspricht dem m nach der Messung
-    int index1 = sensorRead.indexOf(seperator1);                        // index1 gibt die Stelle des separator1 im String an
-    int index2 = sensorRead.indexOf(seperator2);                        // index2 gibt die Stelle des separator2 im String an
-    String firstString = sensorRead.substring(index1 + 1, index2);      // generiert einen neuen String firstString beginnend von index1 + 1 bis index2
-    char buf[20] = "";                                                  // generiert einen leeren char array von Länge 20
-    firstString.toCharArray(buf, 20);                                   // der String firstString wird zu einem Charstring transformiert und in buf geschrieben
-    float distance = atof(buf);                                         // der char string buf wird in einen float umgewandelt und in der Variable distance gespeichert
-    if (distance != 0) {                                                // Wenn der Wert von distance nicht gleich 0 ist,
-      Serial.print("sensorRead: ");
-      Serial.println(sensorRead);
-      float messwert = distance;
-      Serial.print("messwert: ");
-      Serial.println(messwert);
-      return messwert;
     }
-  }//relsultatend
-}//while end
+    zaehler++;
+  }
+}
 
-float flaecheberechnen(float messungsarray[]) {
-  if (messungsarray[2] < messungsarray[3] && messungsarray[4] < messungsarray[3]) { //Tank hat eine Kreisfläche
-    float durchmesser = messungsarray[0] + messungsarray[3];
+float flaecheberechnen(float messungsarray[]) { //alle diese Werte müssen angepasst werden, wenn der Speicherort im Array sich ändert
+  if (messungsarray[26] < messungsarray[27] && messungsarray[28] < messungsarray[27]) {  //Tank hat eine Kreisfläche
+    float durchmesser = messungsarray[24] + messungsarray[27];
     float flaeche = pi * (durchmesser / 2) * (durchmesser / 2);
     return flaeche;
   }//ifend
   else {
-    float a = messungsarray[0] + messungsarray[3];
-    float b = messungsarray[1] + messungsarray[5];
+    float a = messungsarray[24] + messungsarray[27];
+    float b = messungsarray[25] + messungsarray[29];
     float flaeche = a * b;
     return flaeche;
   }//elseend
 }//flaechenberechnenend
 
+void loop() { // run over and over
+
+  while (Serial1.available()) {                                       // Wartet bis Serial input von Laser 1 vorhanden ist
+    char input = Serial1.read();                                      // Schreibt die vorhandene Information der Variable input zu
+    if (input != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
+      sensorRead += input;                                            // der String sensorRead mit den inputs gefüllt
+    } else {
+      break;
+    } //elseend
+  }//whileend
+
+  while (Serial2.available()) {                                        // Wartet bis Serial input von Laser 1 vorhanden ist
+    char inputn = Serial2.read();                                      // Schreibt die vorhandene Information der Variable input zu
+    if (inputn != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
+      sensorReadn += inputn;                                           // der String sensorRead mit den inputs gefüllt
+    } else {
+      break;
+    } //elseend
+  }//whileend
+
+
+  char seperator1 = ' ';                                              // separator1 entspricht dem Leehrzeichen
+  char seperator2 = 'm';                                              // separator2 entspricht dem m nach der Messung
+  int index1 = sensorRead.indexOf(seperator1);                        // index1 gibt die Stelle des separator1 im String an
+  int index2 = sensorRead.indexOf(seperator2);                        // index2 gibt die Stelle des separator2 im String an
+  String firstString = sensorRead.substring(index1 + 1, index2);      // generiert einen neuen String firstString beginnend von index1 + 1 bis index2
+  char buf[20] = "";                                                  // generiert einen leeren char array von Länge 20
+  firstString.toCharArray(buf, 20);                                   // der String firstString wird zu einem Charstring transformiert und in buf geschrieben
+  float distance = atof(buf);                                         // der char string buf wird in einen float umgewandelt und in der Variable distance gespeichert
+  if (distance != 0) {                                                // Wenn der Wert von distance nicht gleich 0 ist,
+    Serial.println(sensorRead);
+    messungen[y] = distance;                                          // wird sie an der Stelle y in den array messungen geschrieben
+    Serial.println(messungen[y]);
+    y++;
+  }
+  sensorRead = "";                                                    // Der String sensorRead wird wieder auf Null gesetzt
+
+
+  int index1n = sensorReadn.indexOf(seperator1);                      // index1n gibt die Stelle des separator1 im String an
+  int index2n = sensorReadn.indexOf(seperator2);                      // index2n gibt die Stelle des separator2 im String an
+  String firstStringn = sensorReadn.substring(index1n + 1, index2n);  // generiert einen neuen String firstString beginnend von index1n + 1 bis index2n
+  char bufn[20] = "";                                                 // generiert einen leeren char array von Länge 20
+  firstStringn.toCharArray(bufn, 20);                                 // der String firstStringn wird zu einem Charstring transformiert und in buf geschrieben
+  float distancen = atof(bufn);                                       // der char string bufn wird in einen float umgewandelt und in der Variable distance gespeichert
+  if (distancen != 0) {                                               // Wenn der Wert von distancen nicht gleich 0 ist,
+    messungenn[z] = distancen;                                        // wird sie an der Stelle z in den array messungenn geschrieben
+    Serial.println(messungenn[z]);
+    z++;
+  }
+
+  sensorReadn = "";                                                   // Der String sensorReadn wird wieder auf Null gesetzt
+
+  if (Serial.available() > 0) {                                       // Abfragen ob eine Eingabe über Serial
+    incomingByte = Serial.read();                                     // Wenn ja, wird der Wert in die Variable incomingByte geschrieben
+
+    if (incomingByte == 'B') {
+      printen(messungen, 30, 0);
+      float flaeche = flaecheberechnen(messungen);
+      Serial.println(' ');
+      Serial.println("Fläche: ");
+      Serial.println(flaeche);
+      incomingByte = 0;                                               // incomingByte wieder auf 0
+    }//ifendD
+
+
+    if (incomingByte == 'E') { //In diesem Teil werden die Messungen im 90 Grad Schritt gemacht
+        y = 24; //Bestimmt den Startort der Messungen für die letzten Messungen
+      if (ort <= 4) {
+        Serial1.write("D");                               // Messung an kürzester Stelle
+        delay(1000);
+        drehung(50, 1);                                               // Drehung um 90 Grad
+        Serial1.write("D");                             // Messung an 90 Grad Stelle
+        delay(1000);
+        drehung(35, 1);                                               // Drehung um 63 Grad
+        Serial1.write("D");                              // 1 Messung zum Erkennen der Geometrie
+        delay(1000);
+        drehung(15, 1);                                               // Drehung zu 180 Grad
+        Serial1.write("D");                              // Messung an 180 Grad Stelle
+        delay(1000);
+        drehung(15, 1);                                               // Drehung um 27 Grad
+        Serial1.write("D");                            // 2 Messung zum Erkennen der Geometrie
+        delay(1000);
+        drehung(35, 1);                                               // Drehung zu 270 Grad
+        Serial1.write("D");                              // Messung an 270 Grad Stelle
+        delay(1000);
+      }//ifort1end
+
+      if (ort > 4) {
+        Serial1.write("D");                               // Messung an kürzester Stelle
+        delay(1000);
+        drehung(50, 0);                                               // Drehung um 90 Grad
+        Serial1.write("D");                              // Messung an 90 Grad Stelle
+        delay(1000);
+        drehung(35, 0);                                               // Drehung um 63 Grad
+        Serial1.write("D");                               // 1 Messung zum Erkennen der Geometrie
+        delay(1000);
+        drehung(15, 0);                                               // Drehung zu 180 Grad
+        Serial1.write("D");                              // Messung an 180 Grad Stelle
+        delay(1000);
+        drehung(15, 0);                                               // Drehung um 27 Grad
+        Serial1.write("D");                              // 2 Messung zum Erkennen der Geometrie
+        delay(1000);
+        drehung(35, 0);                                               // Drehung zu 270 Grad
+        Serial1.write("D");                             // Messung an 270 Grad Stelle
+        delay(1000);
+      }//ifort2end
+      incomingByte = 0;                                               // incomingByte wieder auf 0
+    }//ifEend
+
+    if (incomingByte == 'A') {  //In diesem Teil wird zur kürzesten Stelle der ersten 10 Messungen gedreht
+      printen(messungen, 10, 0);
+      minimumfinden(messungen, 10);
+      Serial.print(ort);
+      if (ort <= 9) {
+        if (ort <= 4) {
+          for (int i = 0; i <= ort; i++) {
+            drehung(aschritte, 0);
+          }//forortschleife
+        }//ifort1end
+
+        if (ort > 4) {
+          int ortlinks = 9 - ort;
+          for (int j = 0; j < ortlinks; j++) {
+            drehung(aschritte, 1);
+          }//forortschleife
+        }//ifort2end
+        incomingByte = 0;                                               // incomingByte wieder auf 0
+      }//ifendD
+    }//ifAend
+
+    if (incomingByte == 'R') { //In diesem Abschnitt werden die 10 ersten Messungen gemacht
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      drehung(aschritte, 0);
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+      delay(1000);
+      incomingByte = 0;
+    }//ifendR
+
+    if (incomingByte == 'M') {
+      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+    }//ifendM
+
+    if (incomingByte == 'N') {
+      Serial2.write("D");                                             //Senden Messbefehl an Laser 2
+    }//ifendN
+
+    if (incomingByte == 'D') {
+      drehung(aschritte, 0);
+      incomingByte = 0;                                               // incomingByte wieder auf 0
+    }//ifendD
+
+    if (incomingByte == 'P') {                                        // Printen des Arrays messungen
+      printen(messungen, 10, 0);
+      incomingByte = 0;
+    }//ifendP
+
+    if (incomingByte == 'Q') {                                        // Printen des Arrays messungen
+      printen(messungenn, 3, 0);
+      incomingByte = 0;
+    }//ifendP
+
+    if (incomingByte == 'F') {                                        // Suchen des Minimums des Arrays messungen
+      minimumfinden(messungen, 10);
+      Serial.print(ort);
+      incomingByte = 0;
+    }//ifendF
+
+    if (incomingByte == 'G') {                                        // Suchen des Minimums des Arrays messungen
+      minimumfinden(messungenn, 3);
+      incomingByte = 0;
+    }//ifendF
+
+
+    if (incomingByte == 'K') {
+      drehung (2, 0);
+      incomingByte = 0;                                               // incomingByte wieder auf 0
+    }//ifKend
+
+    if (incomingByte == 'L') {
+      drehung (2, 1);
+      incomingByte = 0;                                               // incomingByte wieder auf 0
+    }//ifLend
+
+    if (incomingByte == 'V') {
+      vergleichen(messungen, 20);
+    }//ifVend
+
+
+  }//ifendserialavailable
+}//loopend
 
