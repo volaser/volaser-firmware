@@ -1,14 +1,12 @@
-/*(14.05.18) FSchlussprogramm2 basiert auf Fschlussprogramm1 jedoch mit folgenden Änderungen:*/
+/*(15.05.18) FSchlussprogramm3 basiert auf Fschlussprogramm2 jedoch wird hier versucht, auf erste/folgende Messungen zu reagieren:*/
 
-//Led die aufblinkt statt Text bei Sludge zu nahe: funktioniert (14.05.18)
-//Schieberegler weg : funktioniert (14.05.18)
 //Auswahltaste für erste und folgende Messungen: eingebaut auf V1 aber führt noch nichts aus -> nächstes Programm (14.05.18)
-//Kommunikation verbessern: funktioniert (14.05.18)
-//accumulation rate hinzufügen: funktioniert (15.05.18)
-//Am Schluss alles gedrehte zurückfahren: funktioniert (15.05.18)
+//Ablauf bei n-ter Messung anderst: funktioniert (15.05.18)
+//Eingabe Terminal ändern je nach Messung: funktioniert (16.05.18)
+//accumulation rate vielleicht nur bei folgenden Messungen auszugeben: funktioniert (16.05.18)
 //Überprüfen ob 10te Messung = 10.00, falls ja, Flächenmessung wiederholen, mit anderem Winkel: funktioniert noch nicht
-//Eingabe Terminal ändern je nach Messung: -> nächstes Programm
-//Ablauf bei n-ter Messung anderst: -> nächste Programm
+//!!!!!Achtung, schauen, was genau mit tiefeTank los ist, irgendwie unterschiedliche Werte zwischen erster und folgemessungen!!!!!: überprüft (16.05.18)
+//Seriellekommunikation auskommentieren: noch nicht gemacht
 
 
 #include <WiFi.h>
@@ -52,7 +50,9 @@ int Startpositionbestaetigung2 = 0;                                   // Um die 
 int Startpositionbestaetigung3 = 0;                                     // Um den Start der Messung auszulösen
 int nummermessung = 0;                                                // Ist = 0 bei der ersten Messung und = 1 bei allen folgenden Messungen
 int schlussschritte = 0;                                              // Gibt vor, wie weit der Motor zurückgedreht werden muss am Schluss
+int resetstatus = 0;                                                  // Wenn der Wert = 1 ist, soll der ESP neu gestartet werden
 float differenz = 0;
+float differenzalt = 0;
 float tiefeTank = 0;
 float tiefeSonde = 0;
 float tiefeSludge = 0;
@@ -62,7 +62,8 @@ float volumenSludge = 0;
 float volumenSludgealt = 0;
 float accumulationrate = 0;
 float fuellstand = 0;
-float eingabe = 0;
+float eingabe = 0;                                                    // Eingabe in Terminal bei folgemessung
+int eingabezaehler = 0;                                               // Zähler um die Eingaben den richtigen Variablen einzuweisen
 float ergebniss = 0;
 
 
@@ -93,12 +94,43 @@ WidgetLED led1(V0);
 // in Blynk app writes values to the Virtual Pin V1
 BLYNK_WRITE(V1)
 {
-  nummermessung = param.asInt(); // assigning incoming value from pin V6 to a variable
+  nummermessung = param.asInt(); // assigning incoming value from pin V1 to a variable
 
 }
 
-
+// This function will be called every time Button Widget
+// in Blynk app writes values to the Virtual Pin V2
 BLYNK_WRITE(V2)
+{
+  Startpositionbestaetigung1 = param.asInt(); // assigning incoming value from pin V2 to a variable
+
+}
+
+// This function will be called every time Butten Widget
+// in Blynk app writes values to the Virtual Pin V3
+BLYNK_WRITE(V3)
+{
+  Startpositionbestaetigung2 = param.asInt(); // assigning incoming value from pin V3 to a variable
+
+}
+
+// This function will be called every time Butten Widget
+// in Blynk app writes values to the Virtual Pin V4
+BLYNK_WRITE(V4)
+{
+  Startpositionbestaetigung3 = param.asInt(); // assigning incoming value from pin V4 to a variable
+
+}
+
+// This function will be called every time Butten Widget
+// in Blynk app writes values to the Virtual Pin V5
+BLYNK_WRITE(V5)
+{
+  resetstatus = param.asInt(); // assigning incoming value from pin V5 to a variable
+
+}
+
+BLYNK_WRITE(V6)
 {
   float latitude = param[0].asFloat();
   float longitude = param[1].asFloat();
@@ -106,43 +138,36 @@ BLYNK_WRITE(V2)
   float geschwindigkeit = param[3].asFloat();
 }//WriteV2end
 
+// Attach WidgetTermnial to Virtual Pin V7
+WidgetTerminal terminal(V7);
 
-//Attach WidgetLCD to Virtual Pin V3
-WidgetLCD lcd(V3);
-
-// Attach WidgetTermnial to Virtual Pin V4
-WidgetTerminal terminal(V4);
-
-BLYNK_WRITE(V4)
-{
-  tiefeSonde = param.asFloat();
-  terminal.flush();
-
-}
-
-// This function will be called every time Button Widget
-// in Blynk app writes values to the Virtual Pin V5
-BLYNK_WRITE(V5)
-{
-  Startpositionbestaetigung1 = param.asInt(); // assigning incoming value from pin V5 to a variable
-
-}
-
-// This function will be called every time Butten Widget
-// in Blynk app writes values to the Virtual Pin V6
-BLYNK_WRITE(V6)
-{
-  Startpositionbestaetigung2 = param.asInt(); // assigning incoming value from pin V6 to a variable
-
-}
-
-// This function will be called every time Butten Widget
-// in Blynk app writes values to the Virtual Pin V7
 BLYNK_WRITE(V7)
 {
-  Startpositionbestaetigung3 = param.asInt(); // assigning incoming value from pin V6 to a variable
+  if (nummermessung == 0) {
+    tiefeSonde = param.asFloat();
+    terminal.flush();
+  }//iferstemessungend
 
+  if (nummermessung == 1) {
+    eingabe = param.asFloat();
+    terminal.flush();
+  }//iffolgemessungend
 }
+
+//Attach WidgetLCD to Virtual Pin V8
+WidgetLCD lcd1(V8);
+
+//Attach WidgetLCD to Virtual Pin V9
+WidgetLCD lcd2(V9);
+
+//Attach WidgetLCD to Virtual Pin V10
+WidgetLCD lcd3(V10);
+
+//Attach WidgetLCD to Virtual Pin V11
+WidgetLCD lcd4(V11);
+
+//Attach WidgetLCD to Virtual Pin V12
+WidgetLCD lcd5(V12);
 
 
 void setup() {
@@ -164,17 +189,22 @@ void setup() {
   Serial.println(aschritte);                                          // Printet Anzahl Schritte zwischen den Messungen
   Blynk.begin(auth, ssid, pass);                                      // Beginnen der seriellen Kommunikation mit der Blynk App
   int entscheidungsvariable = 0;
-  lcd.clear();
-  // lcd.print(0, 0, "Start Messung");
+  lcd1.clear();
+  lcd2.clear();
+  lcd3.clear();
+  lcd4.clear();
+  lcd5.clear();
+  terminal.println("");
+  terminal.println("");
   terminal.println("Choose number of measurement on #measurement");
-  terminal.println("Note GPS");
   terminal.println("Position Tripod");
   terminal.println("If positioned press SP1");
   terminal.flush();
+  Blynk.virtualWrite(V1, LOW);
+  Blynk.virtualWrite(V2, LOW);
+  Blynk.virtualWrite(V3, LOW);
+  Blynk.virtualWrite(V4, LOW);
   Blynk.virtualWrite(V5, LOW);
-  Blynk.virtualWrite(V6, LOW);
-  Blynk.virtualWrite(V7, LOW);
-  Blynk.virtualWrite(V1, 0);
   led1.off();
 
   delay(50);
@@ -323,20 +353,26 @@ void loop() { // run over and over
   switch (entscheidungsvariable) {
     case 1:
       //1. Schritt Programm, Laser 1 aus, Laser 2 ein, sobald SP1 bestätigt wird, macht Laser 2 eine Messung -> gespeichert in Array messungenn[0]
-      z = 0;
-      printnr = 1;
-      counter = 0;
-      //lcd.clear();
-      //lcd.print(0, 0, "Schritt 1");
-      //terminal.println("Schritt 1");
-      //terminal.flush();
-      Serial.println("Laser 1 aus");
-      delay(1000);
-      Serial.println("Laser 2 ein");
-      Serial.println("Messung Laser 2, Laser 2 befindet sich zu oberst beim Tripod -> Speichern Wert in Array messungenn an Stelle 1.");
-      Serial2.write("D");
-      delay(1000);
-      entscheidungsvariable = 0;
+      if (nummermessung == 0) {
+        z = 0;
+        printnr = 1;
+        counter = 0;
+        //      Serial.println("Laser 1 aus");
+        //      delay(1000);
+        //      Serial.println("Laser 2 ein");
+        //      Serial.println("Messung Laser 2, Laser 2 befindet sich zu oberst beim Tripod -> Speichern Wert in Array messungenn an Stelle 1.");
+        Serial2.write("D");
+        delay(1000);
+        entscheidungsvariable = 0;
+      }//iferstemessungend
+
+      if (nummermessung == 1) {
+        printnr = 5;
+        terminal.println("Insert distance from last measurement");
+        terminal.print("D: ");
+        terminal.flush();
+        entscheidungsvariable = 0;
+      }//iffolgemessung
       break;
     case 2:
       //2. Schritt Programm:Laser 1 geht an, um die Positionierung zu vereinfachen, Laser 2 überprüft Abstand zum Sludge, warnt im Notfall
@@ -348,50 +384,93 @@ void loop() { // run over and over
       Serial1.write("O");
       Serial2.write("D");
       delay(1000);
-      Serial.println("falls doch, sendet eine Warunung");
-      delay(1000);
-      Serial.println("Schritt 2 fertig");
+      //      Serial.println("falls doch, sendet eine Warunung");
+      //      delay(1000);
+      //      Serial.println("Schritt 2 fertig");
       entscheidungsvariable = 0;
       break;
     case 3:
       //3. Schritt Programm: Laser 1 fängt an Messungen zu machen, damit man die Tankgeometrie sieht und Laser 2 weiter misst, um die
       //zurückgelegte Distanz herauszugeben
       //warten bis SP3 bestätigt
-      Serial.println("Laser 1 geht an, um Positionierung zu vereinfachen, macht keine Messungen, nur Laserpunkt zur Positionierung");
-      delay(1000);
-      Serial.println("Laser 2 überprüft immer noch Abstand zum Sludge");
-      delay(1000);
-      Serial.println("Bitte Startposition bestätigen");
-      delay(1000);
-      Serial.println("Sobald die Startposition bestätigt wurde, Laser 2 zweite Messung, welche in Array messungenn an Stelle 2 gespeichert wird");
-      delay(1000);
-      Serial.println("Schritt 3 fertig");
+      //      Serial.println("Laser 1 geht an, um Positionierung zu vereinfachen, macht keine Messungen, nur Laserpunkt zur Positionierung");
+      //      delay(1000);
+      //      Serial.println("Laser 2 überprüft immer noch Abstand zum Sludge");
+      //      delay(1000);
+      //      Serial.println("Bitte Startposition bestätigen");
+      //      delay(1000);
+      //      Serial.println("Sobald die Startposition bestätigt wurde, Laser 2 zweite Messung, welche in Array messungenn an Stelle 2 gespeichert wird");
+      //      delay(1000);
+      //      Serial.println("Schritt 3 fertig");
       y = 0;
       z = 2;
       printnr = 3;
       counter = 0;
       Serial2.write("D");
-      delay(1000);
-      Serial1.write("D");
-      delay(1000);
+      if (nummermessung == 0) {
+        Serial1.write("D");
+        delay(1000);
+      }//iferstemessungend
+      if (nummermessung == 1) {
+        Serial1.write("C");
+      }//iffolgemessungend
       entscheidungsvariable = 0;
       break;
     case 4:
-      //programm fünfter Schritt, Messung Sonde
+      //Schritt 4: Messung Sonde
       Serial.println("Eingabe Messwert Sonde");
-      delay(1000);
+      //      delay(1000);
       terminal.println("Insert measurement of stick");
       terminal.print("Measurement stick: ");
       terminal.flush();
       printnr = 4;
       entscheidungsvariable = 0;
       break;
-
+    case 5:
+      //Schritt 1 wenn folgemessung
+      if (eingabezaehler == 1) {
+        printnr = 5;
+        eingabe = 0;
+        terminal.println("Insert Squarearea of tank");
+        terminal.print("TS: ");
+        terminal.flush();
+        entscheidungsvariable = 0;
+      }//ifeingabe=1end
+      if (eingabezaehler == 2) {
+        printnr = 5;
+        eingabe = 0;
+        terminal.println("Insert Tankvolume");
+        terminal.print("TV: ");
+        terminal.flush();
+        entscheidungsvariable = 0;
+      }//ifeingabe=2end
+      if (eingabezaehler == 3) {
+        printnr = 5;
+        eingabe = 0;
+        terminal.println("Insert Sludgevolume measured last time");
+        terminal.print("Old SV: ");
+        terminal.flush();
+        entscheidungsvariable = 0;
+      }//ifeingabe=3end
+      if (eingabezaehler == 4) {
+        //ganz am Schluss von den Messwerteingaben soll das kommen
+        printnr = 1;
+        counter = 0;
+        eingabe = 0;
+        entscheidungsvariable = 0;
+      }//ifeingabe=4end
+      break;
     default:
       // if nothing else matches, do the default
       // default is optional
       break;
   }//switchend
+
+  if (resetstatus == 1) {
+    terminal.println("Wait till Device has restarted.");
+    ESP.restart();
+    resetstatus = 0;
+  }//ifresetknopfend
 
   if (Startpositionbestaetigung1 == 1) {
     entscheidungsvariable = 1;
@@ -399,9 +478,9 @@ void loop() { // run over and over
   }//ifknopfgedrücktend
 
   if (printnr == 1 && counter == 10) {
-    lcd.print(0, 1, "L2:");
-    lcd.print(4, 1, messungenn[0]);
-    lcd.print(10, 1, "m");
+    lcd1.print(0, 1, "L2:");
+    lcd1.print(4, 1, messungenn[0]);
+    lcd1.print(10, 1, "m");
     terminal.println("Move device to SP2");
     terminal.println("If positioned, press SP2");
     terminal.flush();
@@ -410,9 +489,9 @@ void loop() { // run over and over
   }//printnr1counter10end
 
   if (printnr == 2 && counter == 10) {
-    lcd.print(0, 1, "L2:");
-    lcd.print(4, 1, messungenn[1]);
-    lcd.print(10, 1, "m");
+    lcd1.print(0, 1, "L2:");
+    lcd1.print(4, 1, messungenn[1]);
+    lcd1.print(10, 1, "m");
     if (messungenn[1] <= 0.2 && messungenn[1] > 0.1) {
       Blynk.setProperty(V0, "color", "#ED9D00");
       led1.on();
@@ -437,14 +516,22 @@ void loop() { // run over and over
   }//printnr2counter10end
 
   if (printnr == 3 && counter == 10) {
-    lcd.clear();
-    lcd.print(0, 0, "L1:");
-    lcd.print(3, 0, messungen[0]);
-    lcd.print(9, 0, "m");
+    if (nummermessung == 0) {
+      lcd1.clear();
+      lcd1.print(0, 0, "L1:");
+      lcd1.print(3, 0, messungen[0]);
+      lcd1.print(9, 0, "m");
+    }//iferstemessungend
+    if (nummermessung == 1) {
+//      lcd1.clear();
+      lcd1.print(0, 0, "Dtg:");
+      lcd1.print(4, 0, differenzalt);
+      lcd1.print(10, 0, "m");
+    }//iffolgemessungend
     differenz = messungenn[1] - messungenn[2];
-    lcd.print(0, 1, "D: ");
-    lcd.print(2, 1, differenz);
-    lcd.print(8, 1, "m");
+    lcd1.print(0, 1, "D:");
+    lcd1.print(2, 1, differenz);
+    lcd1.print(8, 1, "m");
     if (messungenn[2] <= 0.2 && messungenn[2] > 0.1) {
       Blynk.setProperty(V0, "color", "#ED9D00");
       led1.on();
@@ -457,13 +544,21 @@ void loop() { // run over and over
       led1.off();
     }//ifmessungennichtzunahe
     if (Startpositionbestaetigung3 == 1) {
-      terminal.println("Wait till measurement finished");
-      terminal.flush();
-      printnr = 0;
-      incomingByte = 'T';
-      counter = 0;
-      y = 0;
-      entscheidungsvariable = 0;
+      if (nummermessung == 0) {
+        terminal.println("Wait till measurement finished");
+        terminal.flush();
+        printnr = 0;
+        incomingByte = 'T';
+        counter = 0;
+        y = 0;
+        entscheidungsvariable = 0;
+      }//iferstemessungend
+      if (nummermessung == 1) {
+        terminal.println("Check Results in Tab 3. Results");
+        terminal.flush();
+        printnr = 6;
+        entscheidungsvariable = 0;
+      }//iferstemessungend
     }//ifknopfgedrücktend
     if (Startpositionbestaetigung3 == 0) {
       entscheidungsvariable = 3;
@@ -473,6 +568,7 @@ void loop() { // run over and over
   if (printnr == 4 && tiefeSonde != 0) {
     terminal.print(tiefeSonde);
     terminal.println(" m");
+    terminal.println("Check Results in Tab 3. Results");
     terminal.flush();
     tiefeTank = tiefeSonde - (messungenn[0] - messungenn[2]);
     tiefeSludge = tiefeTank - (messungenn[2]);
@@ -480,59 +576,129 @@ void loop() { // run over and over
     volumenSludge = volumenberechnung(tiefeSludge, flaecheTank);
     fuellstand = (volumenSludge / volumenTank) * 100;
     accumulationrate = volumenSludge - volumenSludgealt;
+    Serial.println("Ausgabe Distanz");
+    Serial.println(differenz);
+    lcd2.print(0, 0, "D:");
+    lcd2.print(2, 0, differenz);
+    lcd2.print(8, 0, "m");
+    //    delay(1000);
+    Serial.println("Ausgabe Tankfläche");
+    Serial.println(flaecheTank);
+    lcd2.print(0, 1, "TS:");
+    lcd2.print(3, 1, flaecheTank);
+    lcd2.print(9, 1, "m^2");
+    //    delay(1000);
     Serial.println("Ausgabe Tanktiefe = Messwert Sonde - (Startwert Laser - Startwert Messung)");
     Serial.println(tiefeTank);
-    terminal.print("Tanktiefe: ");
-    terminal.print(tiefeTank);
-    terminal.println(" m");
-    terminal.flush();
-    delay(1000);
+    lcd3.print(0, 0, "TD:");
+    lcd3.print(3, 0, tiefeTank);
+    lcd3.print(9, 0, "m");
+    //    delay(1000);
     Serial.println("Ausgabe Sludgetiefe = Tanktiefe - Startwert Messung");
     Serial.println(tiefeSludge);
-    terminal.print("Sludgetiefe: ");
-    terminal.print(tiefeSludge);
-    terminal.println(" m");
-    terminal.flush();
-    delay(1000);
+    lcd4.print(0, 0, "SD:");
+    lcd4.print(3, 0, tiefeSludge);
+    lcd4.print(9, 0, "m");
+    //    delay(1000);
     Serial.println("Ausgabe Tankvolumen = Tanktiefe * Flaeche von Schritt 5");
     Serial.println(volumenTank);
-    terminal.print("Tankvolmen: ");
-    terminal.print(volumenTank);
-    terminal.println(" m^3");
-    terminal.flush();
-    delay(1000);
+    lcd3.print(0, 1, "TV:");
+    lcd3.print(3, 1, volumenTank);
+    lcd3.print(9, 1, "m^3");
+    //    delay(1000);
     Serial.println("Ausgabe Sludgevolumen = Flaeche von Schritt 5 * (Tanktiefe - Startwert Messung)");
     Serial.println(volumenSludge);
-    terminal.print("Sludgevolmen: ");
-    terminal.print(volumenSludge);
-    terminal.println(" m^3");
-    terminal.flush();
-    delay(1000);
+    lcd4.print(0, 1, "SV:");
+    lcd4.print(3, 1, volumenSludge);
+    lcd4.print(9, 1, "m^3");
+    //    delay(1000);
     Serial.println("Ausgabe Füllstand in Prozent = Sludgevolumen/Tankvolumen * 100");
     Serial.println(fuellstand);
-    terminal.print("Füllstand: ");
-    terminal.print(fuellstand);
-    terminal.println(" %");
-    terminal.flush();
-    delay(1000);
-    Serial.println("Accumulation Rate = Sludgevolumenneu - Sludgevolumenalt"); //Diese nur Printen, wenn Messung N
-    Serial.println(accumulationrate);
-    terminal.print("Accumulation rate: ");
-    terminal.print(accumulationrate);
-    terminal.println(" m^3");
-    terminal.flush();
-    delay(1000);
-    lcd.clear();
-    lcd.print(0, 0, "TV:");                     //Nur Printen, wenn erste Messung, sonst Accumulation rate ausgeben, ich denke, ich mache in Tab 2
-    lcd.print(3, 0, volumenTank);               // eine Ausgabe auf 2 LCD screens mit allen Schlusswerten: Distanz, Tanktiefe, Sludgevolumen, Tankvolumen, Accumulation Rate
-    lcd.print(9, 0, "m^3");
-    lcd.print(0, 1, "SV:");
-    lcd.print(3, 1, volumenSludge);
-    lcd.print(9, 1, "m^3");
+    lcd5.print(0, 0, "FS:");
+    lcd5.print(3, 0, fuellstand);
+    lcd5.print(9, 0, "%");
+    //    delay(1000);
     Serial.println("Schritt 5 fertig");
     printnr = 0;
     entscheidungsvariable = 0;
-  }//printnr1counter10end
+  }//printnr4end
+
+  if (printnr == 5 && eingabe != 0) {
+    //    terminal.println(eingabe);
+    //    terminal.flush();
+    if (eingabezaehler == 0) {
+      differenzalt = eingabe;
+    }//ifeingabe=0end
+    if (eingabezaehler == 1) {
+      flaecheTank = eingabe;
+    }//ifeingabe=1end
+    if (eingabezaehler == 2) {
+      volumenTank = eingabe;
+    }//ifeingabe=2end
+    if (eingabezaehler == 3) {
+      volumenSludgealt = eingabe;
+    }//ifeingabe=3end
+    eingabezaehler++;
+    entscheidungsvariable = 5;
+  }//printnr5end
+
+  if (printnr == 6) {
+    tiefeTank = volumenTank / flaecheTank;
+    tiefeSludge = tiefeTank - (messungenn[2]);
+    volumenSludge = volumenberechnung(tiefeSludge, flaecheTank);
+    fuellstand = (volumenSludge / volumenTank) * 100;
+    accumulationrate = volumenSludge - volumenSludgealt;
+    Serial.println("Ausgabe Distanz");
+    Serial.println(differenz);
+    lcd2.print(0, 0, "D:");
+    lcd2.print(2, 0, differenz);
+    lcd2.print(8, 0, "m");
+    //    delay(1000);
+    Serial.println("Ausgabe Tankfläche");
+    Serial.println(flaecheTank);
+    lcd2.print(0, 1, "TS:");
+    lcd2.print(3, 1, flaecheTank);
+    lcd2.print(9, 1, "m^2");
+    //    delay(1000);
+    Serial.println("Ausgabe Tanktiefe = Messwert Sonde - (Startwert Laser - Startwert Messung)");
+    Serial.println(tiefeTank);
+    lcd3.print(0, 0, "TD:");
+    lcd3.print(3, 0, tiefeTank);
+    lcd3.print(9, 0, "m");
+    //    delay(1000);
+    Serial.println("Ausgabe Sludgetiefe = Tanktiefe - Startwert Messung");
+    Serial.println(tiefeSludge);
+    lcd4.print(0, 0, "SD:");
+    lcd4.print(3, 0, tiefeSludge);
+    lcd4.print(9, 0, "m");
+    //    delay(1000);
+    Serial.println("Ausgabe Tankvolumen = Tanktiefe * Flaeche von Schritt 5");
+    Serial.println(volumenTank);
+    lcd3.print(0, 1, "TV:");
+    lcd3.print(3, 1, volumenTank);
+    lcd3.print(9, 1, "m^3");
+    //    delay(1000);
+    Serial.println("Ausgabe Sludgevolumen = Flaeche von Schritt 5 * (Tanktiefe - Startwert Messung)");
+    Serial.println(volumenSludge);
+    lcd4.print(0, 1, "SV:");
+    lcd4.print(3, 1, volumenSludge);
+    lcd4.print(9, 1, "m^3");
+    //    delay(1000);
+    Serial.println("Ausgabe Füllstand in Prozent = Sludgevolumen/Tankvolumen * 100");
+    Serial.println(fuellstand);
+    lcd5.print(0, 0, "FS:");
+    lcd5.print(3, 0, fuellstand);
+    lcd5.print(9, 0, "%");
+    //    delay(1000);
+    Serial.println("Accumulation Rate = Sludgevolumenneu - Sludgevolumenalt"); //Diese nur Printen, wenn Messung N
+    Serial.println(accumulationrate);
+    lcd5.print(0, 1, "AR:");
+    lcd5.print(3, 1, accumulationrate);
+    lcd5.print(9, 1, "m^3");
+    Serial.println("Schritt 5 fertig");
+    printnr = 0;
+    entscheidungsvariable = 0;
+  }//printnr6end
 
   if (incomingByte == 'T' && counter == 0) {                //In diesem Abschnitt werden die 10 ersten Messungen gemacht
     Serial1.write("D");                                             //Senden Messbefehl an Laser 1
