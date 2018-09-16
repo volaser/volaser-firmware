@@ -1,6 +1,5 @@
-/* Im Vergleich zu Schlussprogramm 4 habe ich in Schlussprogramm 6 das Minimumsuchen
-  richtig gemacht und die Volumenberechnung eingefügt. Dieses Programm funktioniert vollständig, jedoch noch in Einzelschritten.*/
-//funktioniert
+/* Im Vergleich zu Schlussprogramm 6 habe ich in Schlussprogramm 7 das Programm nach einer Eingabe ablaufend gemacht.*/
+//funktioniert ganz
 
 HardwareSerial Serial1(1);                                            // Macht einen HardwareSerial für Laser 1
 HardwareSerial Serial2(2);                                            // Macht einen HardwareSerial für Laser 2
@@ -19,8 +18,6 @@ float s = 360 / anzahl;                                               // Grad, d
 float aschritte = s / schritt;                                        // Anzal Schritte, die zwischen den Messungen gemacht werden müssen
 int y = 0;                                                            // Variable um die Messungen im Array an die richtige Stelle zu schreiben
 int z = 0;
-int n = 2;                                                            // Im Moment nicht nötig: Für For-Schleife um das Minimum zu finden
-int m = 0;                                                            // Im Moment nicht nötig: Für For-Schleife um das Minimum zu printen
 int ort = 100;
 int zaehler = 10;
 const float pi = 3.141;
@@ -31,6 +28,7 @@ String sensorReadn;
 char incomingByte = 0;                                                // Variable um die einzelnen Schritte auszulösen
 int falsecount = 0;                                                   // Zur Minimumsuche, sobald Falsecount den Wert 2 erreicht hat, ist das Programm beendet
 int drehrichtung = 0;                                                 // Zur Bestimmung Drehrichtung bei der Minimumssuche
+int programmzaehler = 0;                                              // Um durch das Programm zu führen
 
 void setup() {
 
@@ -55,13 +53,6 @@ void setup() {
   delay(50);
   Serial1.write("O");                                                 // Schaltet Laser 1 ein
   Serial2.write("O");                                                 // Schaltet Laser 2 ein
-
-
-  //void turn_motor(int degrees, float speed) {
-  //  // Do Stuff with speed and float
-  //  int i, value
-  //  return value[];
-  //  }
 
 }//setupend
 
@@ -88,20 +79,20 @@ void drehung(int schritte, int richtung) {
   }//ifend
 }//drehungend
 
-void printen(float messergebnisse[], int laenge, int start) {
+void printen(float messergebnisse[], int laenge, int start) {     // Funktion nimmt einen String der Länge laenge und printet die Einträge von start bis laenge
   for (int i = start; i < laenge; i++) {
     Serial.print(messergebnisse[i]);
     Serial.print(' ');
   }//forend
 }//printend
 
-void minimumfinden(float messergebnisse[], int laenge) {
+void minimumfinden(float messergebnisse[], int laenge) {          // Funktion sucht das minimum eines Strings mit Länge laenge
   float minimum = min(messungen[0], messungen[1]);
   for (int i = 2; i < laenge; i++) {
     minimum = min(minimum, messungen[i]);
   }//forend
-  Serial.println(minimum);
-  for (int x = 0; x < laenge; x++) {
+  Serial.println(minimum);                                        // Printen des Minimums
+  for (int x = 0; x < laenge; x++) {                               // Heraussuchen der Stelle des Minimums im Array
     if (minimum == messungen[x]) {
       Serial.print("Die kürzeste Strecke befindet sich an Position ");
       Serial.print(x);                                            // Gibt die Stelle im Array des Minimums an
@@ -110,22 +101,22 @@ void minimumfinden(float messergebnisse[], int laenge) {
       Serial.print(messungen[x]);
     }//ifend
   }//forend
-}
+}//minimumfindenend
 
-void vergleichen(float messergebnisse[], int laenge) {
-  if (zaehler <= laenge) {
-    if (messergebnisse[zaehler + 1] <= messergebnisse[zaehler]) {
+void vergleichen(float messergebnisse[], int laenge) {            // Funktion vergleicht, ob die neue Messung kürzer ist als die Alte
+  if (zaehler <= laenge) {                                        // Solange der Zähler kleiner ist, als die Länge des Arrays
+    if (messergebnisse[zaehler + 1] <= messergebnisse[zaehler]) { // Wird ausgeführt, wenn die neue Messung kleiner gleich die Alte ist
       Serial.println("Neue Messung kürzer als vorherige");
-    }
-    if (messergebnisse[zaehler + 1] > messergebnisse[zaehler]) {
+    }//ifkürzerend
+    if (messergebnisse[zaehler + 1] > messergebnisse[zaehler]) {  // Wird ausgeführt, wenn die neue Messung länger als die Alte ist
       Serial.println("Neue Messung länger als vorherige");
-      falsecount++;
-      if (falsecount == 1) {
+      falsecount++;                                               // Hier wird gezählt, wie oft dies der Fall ist
+      if (falsecount == 1) {                                      // Beim ersten Mal ausführen der Schlaufe, wird die Drehrichtung des Motors geändert
         drehrichtung = 1;
-      }
-    }
-  }
-}
+      }//if=1end
+    }//iflängerend
+  }//ifzaehlerkleinerlaengeend
+}//vergleichenend
 
 float flaecheberechnen(float messungsarray[]) { //alle diese Werte müssen angepasst werden, wenn der Speicherort im Array sich ändert
   if (messungsarray[36] < messungsarray[37] && messungsarray[38] < messungsarray[37]) {  //Tank hat eine Kreisfläche
@@ -141,7 +132,7 @@ float flaecheberechnen(float messungsarray[]) { //alle diese Werte müssen angep
   }//elseend
 }//flaechenberechnenend
 
-float volumenberechnung(float messungenn[], float flaeche) {
+float volumenberechnung(float messungenn[], float flaeche) {         // Funktion berechnet das Volumen aus einer Längenmessung und einer Fläche
   float volumen = messungenn[1] * flaeche;
   return volumen;
 }
@@ -200,203 +191,151 @@ void loop() { // run over and over
 
   if (Serial.available() > 0) {                                       // Abfragen ob eine Eingabe über Serial
     incomingByte = Serial.read();                                     // Wenn ja, wird der Wert in die Variable incomingByte geschrieben
+  }//ifendserialavailable
 
-    if (incomingByte == 'W') {
-      drehung(2, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+  if (incomingByte == 'S') {
+    incomingByte = 'T';
+    programmzaehler = 0;
+  }
+
+  if (incomingByte == 'T' && programmzaehler == 0) {                //In diesem Abschnitt werden die 10 ersten Messungen gemacht
+    Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+    delay(1000);
+    for (int i = 0; i < 9; i++) {
+      drehung(aschritte, 0);                                        // Machen der 9 Drehungen
+      Serial1.write("D");                                           //Senden Messbefehl an Laser 1
       delay(1000);
-      drehung(2, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifWend
+    }//forend
+  }//ifendR
 
-    if (incomingByte == 'X') {
-      Serial.println(falsecount);
-      if (zaehler <= 33) {
-        if (falsecount < 2) {
-          drehung(2, drehrichtung);
-          Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-          delay(1000);
-        }//falsecountkleinerend
-        if (falsecount == 2) {
-          drehung(4, 0);
-          falsecount = 3;
-        }//falsecount2end
-        incomingByte = 0;                                               // incomingByte wieder auf 0
-      }//zahelerend
-    }//ifXend
-
-    if (incomingByte == 'B') {
-      //printen(messungen, 40, 0);
-      printen(messungenn, 3, 0);
-      float flaeche = flaecheberechnen(messungen);
-      Serial.println(' ');
-      Serial.println("Fläche: ");
-      Serial.println(flaeche);
-      float volumen = volumenberechnung(messungenn, flaeche);
-      Serial.println(' ');
-      Serial.println("Volumen: ");
-      Serial.println(volumen);
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifendB
-
-
-    if (incomingByte == 'E') { //In diesem Teil werden die Messungen im 90 Grad Schritt gemacht
-      y = 34; //Bestimmt den Startort der Messungen für die letzten Messungen
-      Serial2.write("D");                                             //Senden Messbefehl an Laser 2
-      if (ort <= 4) {
-        Serial1.write("D");                               // Messung an kürzester Stelle
-        delay(1000);
-        drehung(50, 1);                                               // Drehung um 90 Grad
-        Serial1.write("D");                             // Messung an 90 Grad Stelle
-        delay(1000);
-        drehung(35, 1);                                               // Drehung um 63 Grad
-        Serial1.write("D");                              // 1 Messung zum Erkennen der Geometrie
-        delay(1000);
-        drehung(15, 1);                                               // Drehung zu 180 Grad
-        Serial1.write("D");                              // Messung an 180 Grad Stelle
-        delay(1000);
-        drehung(15, 1);                                               // Drehung um 27 Grad
-        Serial1.write("D");                            // 2 Messung zum Erkennen der Geometrie
-        delay(1000);
-        drehung(15, 0);
-        delay(1000);
-        drehung(50, 1);                                               // Drehung zu 270 Grad
-        Serial1.write("D");                              // Messung an 270 Grad Stelle
-        delay(1000);
+  if (incomingByte == 'T' && programmzaehler == 20) {               //In diesem Teil wird zur kürzesten Stelle der ersten 10 Messungen gedreht
+    printen(messungen, 10, 0);
+    minimumfinden(messungen, 10);
+    Serial.print(ort);
+    if (ort <= 9) {                                                 // Wird nur ausgeführt, wenn sich der Ort innerhalb der 10 Messungen befindet
+      if (ort <= 4) {                                               // Wenn der Ort in den ersten 5 Einträgen des Arrays ist, dreht der Motor in die gleiche Richtung weiter
+        for (int i = 0; i <= ort; i++) {
+          drehung(aschritte, 0);
+        }//forortschleife
       }//ifort1end
 
-      if (ort > 4) {
-        Serial1.write("D");                               // Messung an kürzester Stelle
-        delay(1000);
-        drehung(50, 0);                                               // Drehung um 90 Grad
-        Serial1.write("D");                              // Messung an 90 Grad Stelle
-        delay(1000);
-        drehung(35, 0);                                               // Drehung um 63 Grad
-        Serial1.write("D");                               // 1 Messung zum Erkennen der Geometrie
-        delay(1000);
-        drehung(15, 0);                                               // Drehung zu 180 Grad
-        Serial1.write("D");                              // Messung an 180 Grad Stelle
-        delay(1000);
-        drehung(15, 0);                                               // Drehung um 27 Grad
-        Serial1.write("D");                              // 2 Messung zum Erkennen der Geometrie
-        delay(1000);
-        drehung(15, 1);
-        delay(1000);
-        drehung(50, 0);                                               // Drehung zu 270 Grad
-        Serial1.write("D");                             // Messung an 270 Grad Stelle
-        delay(1000);
+      if (ort > 4) {                                                // Wenn der Ort in den letzten 5 Einträgen des Arrays ist, dreht der Motor in die andere Richtung zurück
+        int ortlinks = 9 - ort;
+        for (int j = 0; j < ortlinks; j++) {
+          drehung(aschritte, 1);
+        }//forortschleife
       }//ifort2end
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifEend
-
-    if (incomingByte == 'A') {  //In diesem Teil wird zur kürzesten Stelle der ersten 10 Messungen gedreht
-      printen(messungen, 10, 0);
-      minimumfinden(messungen, 10);
-      Serial.print(ort);
-      if (ort <= 9) {
-        if (ort <= 4) {
-          for (int i = 0; i <= ort; i++) {
-            drehung(aschritte, 0);
-          }//forortschleife
-        }//ifort1end
-
-        if (ort > 4) {
-          int ortlinks = 9 - ort;
-          for (int j = 0; j < ortlinks; j++) {
-            drehung(aschritte, 1);
-          }//forortschleife
-        }//ifort2end
-        incomingByte = 0;                                               // incomingByte wieder auf 0
-      }//ifendD
-    }//ifAend
-
-    if (incomingByte == 'R') { //In diesem Abschnitt werden die 10 ersten Messungen gemacht
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      drehung(aschritte, 0);
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-      delay(1000);
-      incomingByte = 0;
-    }//ifendR
-
-    if (incomingByte == 'M') {
-      Serial1.write("D");                                             //Senden Messbefehl an Laser 1
-    }//ifendM
-
-    if (incomingByte == 'N') {
-      Serial2.write("D");                                             //Senden Messbefehl an Laser 2
-    }//ifendN
-
-    if (incomingByte == 'D') {
-      drehung(aschritte, 0);
-      incomingByte = 0;                                               // incomingByte wieder auf 0
     }//ifendD
+  }//ifAend
 
-    if (incomingByte == 'P') {                                        // Printen des Arrays messungen
-      printen(messungen, 40, 0);
-      incomingByte = 0;
-    }//ifendP
+  if (incomingByte == 'T' && programmzaehler == 21) {
+    delay(500);
+    drehung(2, 0);
+    delay(500);
+    Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+    delay(1000);
+    drehung(2, 0);
+    Serial1.write("D");                                             //Senden Messbefehl an Laser 1
+    delay(1000);
+  }//ifWend
 
-    if (incomingByte == 'Q') {                                        // Printen des Arrays messungen
-      printen(messungenn, 3, 0);
-      incomingByte = 0;
-    }//ifendP
+  if (incomingByte == 'T' && programmzaehler == 24 || incomingByte == 'T' && programmzaehler == 28 || incomingByte == 'T' && programmzaehler == 32 || incomingByte == 'T' && programmzaehler == 36
+      || incomingByte == 'T' && programmzaehler == 40 || incomingByte == 'T' && programmzaehler == 44 || incomingByte == 'T' && programmzaehler == 48 || incomingByte == 'T' && programmzaehler == 52
+      || incomingByte == 'T' && programmzaehler == 56 || incomingByte == 'T' && programmzaehler == 60 || incomingByte == 'T' && programmzaehler == 64 || incomingByte == 'T' && programmzaehler == 68
+      || incomingByte == 'T' && programmzaehler == 72 || incomingByte == 'T' && programmzaehler == 76 || incomingByte == 'T' && programmzaehler == 80 || incomingByte == 'T' && programmzaehler == 84
+      || incomingByte == 'T' && programmzaehler == 88 || incomingByte == 'T' && programmzaehler == 92 || incomingByte == 'T' && programmzaehler == 96 || incomingByte == 'T' && programmzaehler == 100
+      || incomingByte == 'T' && programmzaehler == 104) {
+    vergleichen(messungen, 33);
+    zaehler++;
+    //}//ifprogrammzaehlernd
+  }//ifVend
 
-    if (incomingByte == 'F') {                                        // Suchen des Minimums des Arrays messungen
-      minimumfinden(messungen, 10);
-      Serial.print(ort);
-      incomingByte = 0;
-    }//ifendF
-
-    if (incomingByte == 'G') {                                        // Suchen des Minimums des Arrays messungen
-      minimumfinden(messungenn, 3);
-      incomingByte = 0;
-    }//ifendF
-
-
-    if (incomingByte == 'K') {
-      drehung (2, 0);
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifKend
-
-    if (incomingByte == 'L') {
-      drehung (2, 1);
-      incomingByte = 0;                                               // incomingByte wieder auf 0
-    }//ifLend
-
-    if (incomingByte == 'V') {
-      vergleichen(messungen, 33);
-      zaehler++;
-      incomingByte = 0;
-    }//ifVend
+  if (incomingByte == 'T' && programmzaehler == 25 || incomingByte == 'T' && programmzaehler == 29 || incomingByte == 'T' && programmzaehler == 33 || incomingByte == 'T' && programmzaehler == 37
+      || incomingByte == 'T' && programmzaehler == 41 || incomingByte == 'T' && programmzaehler == 45 || incomingByte == 'T' && programmzaehler == 49 || incomingByte == 'T' && programmzaehler == 53
+      || incomingByte == 'T' && programmzaehler == 57 || incomingByte == 'T' && programmzaehler == 61 || incomingByte == 'T' && programmzaehler == 65 || incomingByte == 'T' && programmzaehler == 69
+      || incomingByte == 'T' && programmzaehler == 73 || incomingByte == 'T' && programmzaehler == 77 || incomingByte == 'T' && programmzaehler == 81 || incomingByte == 'T' && programmzaehler == 85
+      || incomingByte == 'T' && programmzaehler == 89 || incomingByte == 'T' && programmzaehler == 93 || incomingByte == 'T' && programmzaehler == 97 || incomingByte == 'T' && programmzaehler == 101
+      || incomingByte == 'T' && programmzaehler == 105) {
+    if (falsecount < 3) {
+      Serial.print("falsecount = ");
+      Serial.println(falsecount);
+      if (zaehler <= 33) {                                                // Beschränkt, dass man nur bis zu der richtigen Stelle im Array liest
+        if (falsecount < 2) {                                             // Sorgt dafür, dass solange die neue Messung kürzer ist, in die gleiche Richtung gedreht wird
+          drehung(2, drehrichtung);
+          Serial1.write("D");                                             // Senden Messbefehl an Laser 1
+          delay(1000);
+        }//falsecountkleinerend
+        if (falsecount == 2) {                                            // Sobald die neue Messung zum 2ten Mal länger ist, wird ein Stück zurückgedreht
+          drehung(4, 0);
+          falsecount = 3;                                                 // Der Falschzähler wird auf 3 gesetzt, damit dieser Schritt sicher nicht mehr ausgeführt wird
+          programmzaehler = 110;                                          // Danach wird der Programmzähler auf 110 gesetzt, damit der Rest des Programms ausgeführt werden kann,
+        }//falsecount2end                                                 // auch wenn das Minimum vor Erreichen der Endposition des Arrays gefunden worden ist
+      }//zahelerend
+    }//falsecountend
+    //}//programmzaehlerend
+  }//ifXend
 
 
-  }//ifendserialavailable
+
+  if (incomingByte == 'T' && programmzaehler == 112) {                    //In diesem Teil werden die Messungen im 90 Grad Schritt gemacht
+    y = 34;                                                               //Bestimmt den Startort der Messungen für die letzten Messungen
+    Serial2.write("D");                                                   //Senden Messbefehl an Laser 2
+    if (ort <= 4) {
+      Serial1.write("D");                                                 // Messung an kürzester Stelle
+      delay(1000);
+      drehung(50, 1);                                                     // Drehung um 90 Grad
+      Serial1.write("D");                                                 // Messung an 90 Grad Stelle
+      delay(1000);
+      drehung(35, 1);                                                     // Drehung um 63 Grad
+      Serial1.write("D");                                                 // 1 Messung zum Erkennen der Geometrie
+      delay(1000);
+      drehung(15, 1);                                                     // Drehung zu 180 Grad
+      Serial1.write("D");                                                 // Messung an 180 Grad Stelle
+      delay(1000);
+      drehung(15, 1);                                                     // Drehung um 27 Grad
+      Serial1.write("D");                                                 // 2 Messung zum Erkennen der Geometrie
+      delay(1000);
+      drehung(35, 1);                                                     // Drehung zu 270 Grad
+      Serial1.write("D");                                                 // Messung an 270 Grad Stelle
+      delay(1000);
+    }//ifort1end
+
+    if (ort > 4) {
+      Serial1.write("D");                                                 // Messung an kürzester Stelle
+      delay(1000);
+      drehung(50, 0);                                                     // Drehung um 90 Grad
+      Serial1.write("D");                                                 // Messung an 90 Grad Stelle
+      delay(1000);
+      drehung(35, 0);                                                     // Drehung um 63 Grad
+      Serial1.write("D");                                                 // 1 Messung zum Erkennen der Geometrie
+      delay(1000);
+      drehung(15, 0);                                                     // Drehung zu 180 Grad
+      Serial1.write("D");                                                 // Messung an 180 Grad Stelle
+      delay(1000);
+      drehung(15, 0);                                                     // Drehung um 27 Grad
+      Serial1.write("D");                                                 // 2 Messung zum Erkennen der Geometrie
+      delay(1000);
+      drehung(35, 0);                                                     // Drehung zu 270 Grad
+      Serial1.write("D");                                                 // Messung an 270 Grad Stelle
+      delay(1000);
+    }//ifort2end
+  }//ifEend
+
+
+  if (incomingByte == 'T' && programmzaehler == 134) {                    // Berechnet die Fläche und das Volumen
+    //printen(messungen, 40, 0);
+    printen(messungenn, 3, 0);
+    float flaeche = flaecheberechnen(messungen);
+    Serial.println(' ');
+    Serial.println("Fläche: ");
+    Serial.println(flaeche);
+    float volumen = volumenberechnung(messungenn, flaeche);
+    Serial.println(' ');
+    Serial.println("Volumen: ");
+    Serial.println(volumen);
+    incomingByte = 0;                                                     // incomingByte wieder auf 0
+  }//ifendB
+
+  programmzaehler++;
 }//loopend
 
