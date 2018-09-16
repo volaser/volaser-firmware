@@ -1,4 +1,6 @@
-/* Im Vergleic zu Schlussprogramm 3 habe ich in Schlussprogramm 4 das ganze Programm zu nur 4 Schritten zusammengefasst.*/
+/* Im Vergleich zu Schlussprogramm 4 habe ich in Schlussprogramm 5 eine Funktion
+  für das zuschneiden des Strings geschrieben und versucht über Serialevent das Dateneinlesen zu handeln.*/
+//funktioniert nocht nicht
 
 HardwareSerial Serial1(1);                                            // Macht einen HardwareSerial für Laser 1
 HardwareSerial Serial2(2);                                            // Macht einen HardwareSerial für Laser 2
@@ -27,6 +29,7 @@ static float messungenn[3] = {1, 2, 3};
 String sensorRead;                                                    // Variable um zu überprüfen, dass alle Daten vom Laser übertragen wurden
 String sensorReadn;
 char incomingByte = 0;                                                // Variable um die einzelnen Schritte auszulösen
+int state = 0;
 
 void setup() {
 
@@ -52,14 +55,7 @@ void setup() {
   Serial1.write("O");                                                 // Schaltet Laser 1 ein
   Serial2.write("O");                                                 // Schaltet Laser 2 ein
 
-
-  //void turn_motor(int degrees, float speed) {
-  //  // Do Stuff with speed and float
-  //  int i, value
-  //  return value[];
-  //  }
-
-}//setupend
+//Definitionen der verschiedenenen Funktionen
 
 void drehung(int schritte, int richtung) {
   if ( richtung == 0) {
@@ -134,32 +130,12 @@ float flaecheberechnen(float messungsarray[]) { //alle diese Werte müssen angep
   }//elseend
 }//flaechenberechnenend
 
-void loop() { // run over and over
-
-  while (Serial1.available()) {                                       // Wartet bis Serial input von Laser 1 vorhanden ist
-    char input = Serial1.read();                                      // Schreibt die vorhandene Information der Variable input zu
-    if (input != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
-      sensorRead += input;                                            // der String sensorRead mit den inputs gefüllt
-    } else {
-      break;
-    } //elseend
-  }//whileend
-
-  while (Serial2.available()) {                                        // Wartet bis Serial input von Laser 1 vorhanden ist
-    char inputn = Serial2.read();                                      // Schreibt die vorhandene Information der Variable input zu
-    if (inputn != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
-      sensorReadn += inputn;                                           // der String sensorRead mit den inputs gefüllt
-    } else {
-      break;
-    } //elseend
-  }//whileend
-
-
+void messwert(String comingfromlaser) {
   char seperator1 = ' ';                                              // separator1 entspricht dem Leehrzeichen
   char seperator2 = 'm';                                              // separator2 entspricht dem m nach der Messung
-  int index1 = sensorRead.indexOf(seperator1);                        // index1 gibt die Stelle des separator1 im String an
-  int index2 = sensorRead.indexOf(seperator2);                        // index2 gibt die Stelle des separator2 im String an
-  String firstString = sensorRead.substring(index1 + 1, index2);      // generiert einen neuen String firstString beginnend von index1 + 1 bis index2
+  int index1 = comingfromlaser.indexOf(seperator1);                        // index1 gibt die Stelle des separator1 im String an
+  int index2 = comingfromlaser.indexOf(seperator2);                        // index2 gibt die Stelle des separator2 im String an
+  String firstString = comingfromlaser.substring(index1 + 1, index2);      // generiert einen neuen String firstString beginnend von index1 + 1 bis index2
   char buf[20] = "";                                                  // generiert einen leeren char array von Länge 20
   firstString.toCharArray(buf, 20);                                   // der String firstString wird zu einem Charstring transformiert und in buf geschrieben
   float distance = atof(buf);                                         // der char string buf wird in einen float umgewandelt und in der Variable distance gespeichert
@@ -169,22 +145,53 @@ void loop() { // run over and over
     Serial.println(messungen[y]);
     y++;
   }
-  sensorRead = "";                                                    // Der String sensorRead wird wieder auf Null gesetzt
+  sensorRead = "";
+}//messwertend
 
+void loop() { // run over and over
 
-  int index1n = sensorReadn.indexOf(seperator1);                      // index1n gibt die Stelle des separator1 im String an
-  int index2n = sensorReadn.indexOf(seperator2);                      // index2n gibt die Stelle des separator2 im String an
-  String firstStringn = sensorReadn.substring(index1n + 1, index2n);  // generiert einen neuen String firstString beginnend von index1n + 1 bis index2n
-  char bufn[20] = "";                                                 // generiert einen leeren char array von Länge 20
-  firstStringn.toCharArray(bufn, 20);                                 // der String firstStringn wird zu einem Charstring transformiert und in buf geschrieben
-  float distancen = atof(bufn);                                       // der char string bufn wird in einen float umgewandelt und in der Variable distance gespeichert
-  if (distancen != 0) {                                               // Wenn der Wert von distancen nicht gleich 0 ist,
-    messungenn[z] = distancen;                                        // wird sie an der Stelle z in den array messungenn geschrieben
-    Serial.println(messungenn[z]);
-    z++;
-  }
+  while (Serial1.available()) {                                       // Wartet bis Serial input von Laser 1 vorhanden ist
+    char input = Serial1.read();                                      // Schreibt die vorhandene Information der Variable input zu
+    if (input != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
+      sensorRead += input;                                            // der String sensorRead mit den inputs gefüllt
+    } else {
+      break;
+    } //elseend
+    messwert(sensorRead);
+  }//whileend
+  //  if (state == 1) {
+  //    float distance = messwert(sensorRead);
+  //    if (distance != 0) {                                                // Wenn der Wert von distance nicht gleich 0 ist,
+  //      Serial.println(sensorRead);
+  //      messungen[y] = distance;                                          // wird sie an der Stelle y in den array messungen geschrieben
+  //      Serial.println(messungen[y]);
+  //      y++;
+  //    }
+  //    state = 0;
+  //  }
 
-  sensorReadn = "";                                                   // Der String sensorReadn wird wieder auf Null gesetzt
+  while (Serial2.available()) {                                        // Wartet bis Serial input von Laser 1 vorhanden ist
+    char inputn = Serial2.read();                                      // Schreibt die vorhandene Information der Variable input zu
+    if (inputn != '\n') {                                              // Solange kein newline charakter vom Laser gesendet wird
+      sensorReadn += inputn;                                           // der String sensorRead mit den inputs gefüllt
+    } else {
+      break;
+    } //elseend
+  }//whileend
+  //
+  //  int index1n = sensorReadn.indexOf(seperator1);                      // index1n gibt die Stelle des separator1 im String an
+  //  int index2n = sensorReadn.indexOf(seperator2);                      // index2n gibt die Stelle des separator2 im String an
+  //  String firstStringn = sensorReadn.substring(index1n + 1, index2n);  // generiert einen neuen String firstString beginnend von index1n + 1 bis index2n
+  //  char bufn[20] = "";                                                 // generiert einen leeren char array von Länge 20
+  //  firstStringn.toCharArray(bufn, 20);                                 // der String firstStringn wird zu einem Charstring transformiert und in buf geschrieben
+  //  float distancen = atof(bufn);                                       // der char string bufn wird in einen float umgewandelt und in der Variable distance gespeichert
+  //  if (distancen != 0) {                                               // Wenn der Wert von distancen nicht gleich 0 ist,
+  //    messungenn[z] = distancen;                                        // wird sie an der Stelle z in den array messungenn geschrieben
+  //    Serial.println(messungenn[z]);
+  //    z++;
+  //  }
+  //
+  //  sensorReadn = "";                                                   // Der String sensorReadn wird wieder auf Null gesetzt
 
   if (Serial.available() > 0) {                                       // Abfragen ob eine Eingabe über Serial
     incomingByte = Serial.read();                                     // Wenn ja, wird der Wert in die Variable incomingByte geschrieben
@@ -200,7 +207,7 @@ void loop() { // run over and over
 
 
     if (incomingByte == 'E') { //In diesem Teil werden die Messungen im 90 Grad Schritt gemacht
-        y = 24; //Bestimmt den Startort der Messungen für die letzten Messungen
+      y = 24; //Bestimmt den Startort der Messungen für die letzten Messungen
       if (ort <= 4) {
         Serial1.write("D");                               // Messung an kürzester Stelle
         delay(1000);
