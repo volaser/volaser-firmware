@@ -183,8 +183,8 @@ WidgetLCD lcd5(V12);
 
 void setup()
 {
-
-  Serial.begin(57600); // Open serial communication with the computer
+  // Open serial communication with the computer
+  Serial.begin(57600);
 
   // Opening serial communication with laser 1
   Serial1.begin(19200, SERIAL_8N1, SERIAL1_RXPIN, SERIAL1_TXPIN);
@@ -204,6 +204,7 @@ void setup()
   Serial.println(s);
   Serial.print("Number of steps: ");
   Serial.println(aschritte);
+
   // Start serial communication with the Blynk App
   Blynk.begin(auth, ssid, pass);
   int state = 0;
@@ -265,38 +266,33 @@ void rotation(int steps, int direction)
   }
 }
 
-void print_measurement(float measurement[], int length, int start)
+void print_measurement(float measurement[], int length)
 {
   // Function takes a string of length and length
   // prints the entries from start to length
-  for (int i = start; i < length; i++)
+  for (int i = 0; i < length; i++)
   {
     Serial.print(measurement[i]);
     Serial.print(' ');
   }
 }
 
-void find_minimum(float measurements[], int length)
+int find_minimum(float measurements[], int length)
 {
-  // Function searches for the minimum of a string with length length
-  float minimum = _min(measurements[0], measurements[1]);
-  for (int i = 2; i < length; i++)
+  int min_index = 0;
+  for (int i = 1; i < length; i++)
   {
-    minimum = _min(minimum, measurements[i]);
-  }
-  Serial.println(minimum);
-  for (int x = 0; x < length;
-       x++)
-  { // Find the location of the minimum in the array
-    if (minimum == measurements[x])
+    if (measurements[i] < measurements[min_index])
     {
-      Serial.print("Die kürzeste Strecke befindet sich an Position ");
-      Serial.print(x); // Specifies the position in the minimum array
-      ort = x;
-      Serial.print(" des Arrays und beträgt: ");
-      Serial.print(measurements[x]);
+      min_index = i;
     }
   }
+  ort = min_index;
+  Serial.print("The shortest distange is ");
+  Serial.println(measurements[min_index]);
+  Serial.print(" at index ");
+  Serial.println(min_index);
+  return min_index;
 }
 
 void compare_measurements(float messergebnisse[], int laenge)
@@ -809,7 +805,7 @@ void loop()
       counter == 20)
   { // In this part, the shortest place of the first 10
     // Measurements rotated
-    print_measurement(messungen, 10, 0);
+    print_measurement(messungen, 10);
     find_minimum(messungen, 10);
     Serial.print(ort);
     if (ort <= 9)
@@ -977,9 +973,8 @@ void loop()
   if (incomingByte == 'T' && counter == 134)
   {
     // Calculates the area and the volume
-    // print_measurement(messungen, 40, 0);
     Serial.println(schlussschritte);
-    print_measurement(messungenn, 3, 0);
+    print_measurement(messungenn, 3);
     rotation(schlussschritte, 1);
     flaecheTank = calculate_area(messungen);
     Serial.println(' ');
