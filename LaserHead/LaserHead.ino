@@ -1,4 +1,4 @@
-/* In diesem Programm kann man individuell alle Komponenten ansteueren */
+/* Im Vergleic zu Schlussprogramm 1 habe ich in Schlussprogramm2 Void-Funktionen eingefügt.*/
 
 HardwareSerial Serial1(1);                                            // Macht einen HardwareSerial für Laser 1
 HardwareSerial Serial2(2);                                            // Macht einen HardwareSerial für Laser 2
@@ -20,7 +20,8 @@ int z = 0;
 int n = 2;                                                            // Im Moment nicht nötig: Für For-Schleife um das Minimum zu finden
 int m = 0;                                                            // Im Moment nicht nötig: Für For-Schleife um das Minimum zu printen
 int ort = 100;
-static float messungen[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};         // Generieren des Arrays um die Messungen einzutragen
+int zaehler = 10;
+static float messungen[20] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};         // Generieren des Arrays um die Messungen einzutragen
 static float messungenn[3] = {1, 2, 3};
 String sensorRead;                                                    // Variable um zu überprüfen, dass alle Daten vom Laser übertragen wurden
 String sensorReadn;
@@ -49,7 +50,74 @@ void setup() {
   delay(50);
   Serial1.write("O");                                                 // Schaltet Laser 1 ein
   Serial2.write("O");                                                 // Schaltet Laser 2 ein
+
+
+  //void turn_motor(int degrees, float speed) {
+  //  // Do Stuff with speed and float
+  //  int i, value
+  //  return value[];
+  //  }
+
 }//setupend
+
+void drehung(int schritte, int richtung) {
+  if ( richtung == 0) {
+    digitalWrite(dirPin, HIGH);                                     // Enables the motor to move in a particular direction
+    for (int x = 0; x < schritte; x++) {                           // For-Schleife für x kleiner Anzahl Schritte
+      digitalWrite(stepPin, HIGH);                                  // Senden der Pulse für einen Schritt an den Steppermotor
+      delayMicroseconds(500);
+      digitalWrite(stepPin, LOW);
+      delayMicroseconds(500);
+      Serial.println(x);
+    } //forschritteschleifeend
+  }//ifend
+  if ( richtung == 1) {
+    digitalWrite(dirPin, LOW);                                     // Enables the motor to move in a particular direction
+    for (int x = 0; x < schritte; x++) {                           // For-Schleife für x kleiner Anzahl Schritte
+      digitalWrite(stepPin, HIGH);                                  // Senden der Pulse für einen Schritt an den Steppermotor
+      delayMicroseconds(500);
+      digitalWrite(stepPin, LOW);
+      delayMicroseconds(500);
+      Serial.println(x);
+    } //forschritteschleifeend
+  }//ifend
+}//drehungend
+
+void printen(float messergebnisse[], int laenge) {
+  for (int i = 0; i < laenge; i++) {
+    Serial.print(messergebnisse[i]);
+    Serial.print(' ');
+  }//forend
+}//printend
+
+void minimumfinden(float messergebnisse[], int laenge) {
+  float minimum = min(messungen[0], messungen[1]);
+  for (int i = 2; i < laenge; i++) {
+    minimum = min(minimum, messungen[i]);
+  }//forend
+  Serial.println(minimum);
+  for (int x = 0; x < laenge; x++) {
+    if (minimum == messungen[x]) {
+      Serial.print("Die kürzeste Strecke befindet sich an Position ");
+      Serial.print(x);                                            // Gibt die Stelle im Array des Minimums an
+      ort = x;
+      Serial.print(" des Arrays und beträgt: ");
+      Serial.print(messungen[x]);
+    }//ifend
+  }//forend
+}
+
+void vergleichen(float messergebnisse[], int laenge) {
+  if (zaehler <= laenge) {
+    if (messergebnisse[zaehler + 1] < messergebnisse[zaehler]) {
+      Serial.println("Neue Messung kürzer als vorherige");
+    }
+    if (messergebnisse[zaehler + 1] > messergebnisse[zaehler]) {
+      Serial.println("Neue Messung länger als vorherige");
+    }
+    zaehler++;
+  }
+}
 
 void loop() { // run over and over
 
@@ -81,6 +149,7 @@ void loop() { // run over and over
   firstString.toCharArray(buf, 20);                                   // der String firstString wird zu einem Charstring transformiert und in buf geschrieben
   float distance = atof(buf);                                         // der char string buf wird in einen float umgewandelt und in der Variable distance gespeichert
   if (distance != 0) {                                                // Wenn der Wert von distance nicht gleich 0 ist,
+    Serial.println(sensorRead);
     messungen[y] = distance;                                          // wird sie an der Stelle y in den array messungen geschrieben
     Serial.println(messungen[y]);
     y++;
@@ -114,98 +183,108 @@ void loop() { // run over and over
     }//ifendN
 
     if (incomingByte == 'D') {
-      digitalWrite(dirPin, HIGH);                                     // Enables the motor to move in a particular direction
-      for (int x = 0; x < aschritte; x++) {                           // For-Schleife für x kleiner Anzahl Schritte
-        digitalWrite(stepPin, HIGH);                                  // Senden der Pulse für einen Schritt an den Steppermotor
-        delayMicroseconds(500);
-        digitalWrite(stepPin, LOW);
-        delayMicroseconds(500);
-        Serial.println(x);
-      } //forschritteschleifeend
+      drehung(aschritte, 0);
       incomingByte = 0;                                               // incomingByte wieder auf 0
     }//ifendD
 
     if (incomingByte == 'P') {                                        // Printen des Arrays messungen
-      for (int i = 0; i <= 9; i++) {
-        Serial.print(messungen[i]);
-        Serial.print(' ');
-      }//forend
+      printen(messungen, 10);
       incomingByte = 0;
     }//ifendP
 
     if (incomingByte == 'Q') {                                        // Printen des Arrays messungen
-      Serial.println(messungenn[0]);
-      Serial.print(' ');
-      Serial.print(messungenn[1]);
-      Serial.print(' ');
-      Serial.print(messungenn[2]);
-      Serial.println(' ');
+      printen(messungenn, 3);
       incomingByte = 0;
     }//ifendP
 
     if (incomingByte == 'F') {                                        // Suchen des Minimums des Arrays messungen
-      float minimum = min(messungen[0], messungen[1]);
-      for (int i = 2; i <= 9; i++) {
-        minimum = min(minimum, messungen[i]);
-      }//forend
-      Serial.println(minimum);
-      for (int x = 0; x <= 9; x++) {
-        if (minimum == messungen[x]) {
-          Serial.print("Die kürzeste Strecke befindet sich an Position ");
-          Serial.print(x);                                            // Gibt die Stelle im Array des Minimums an
-          ort = x;
-          Serial.print(" des Arrays und beträgt: ");
-          Serial.print(messungen[x]);
-        }//ifend
-      }//forend
+      minimumfinden(messungen, 10);
+      Serial.print(ort);
+      incomingByte = 0;
+    }//ifendF
+
+    if (incomingByte == 'G') {                                        // Suchen des Minimums des Arrays messungen
+      minimumfinden(messungenn, 3);
       incomingByte = 0;
     }//ifendF
 
     if (incomingByte == 'S' && ort <= 9) {
       if (ort <= 4) {
-        digitalWrite(dirPin, HIGH);                                     // Enables the motor to move in a particular direction
-        for (int i = 0; i <= ort - 1; i++) {
-          for (int x = 0; x < aschritte; x++) {                           // For-Schleife für x kleiner Anzahl Schritte
-            digitalWrite(stepPin, HIGH);                                  // Senden der Pulse für einen Schritt an den Steppermotor
-            delayMicroseconds(500);
-            digitalWrite(stepPin, LOW);
-            delayMicroseconds(500);
-            Serial.println(x);
-          } //forschritteschleifeend
+        for (int i = 0; i <= ort - 1; i++) { //müsste geändert werden, i <= ort
+          drehung(aschritte, 0);
         }//forortschleife
-        int halbschritt = aschritte / 2;
-        for (int x = 0; x < halbschritt ; x++) {                         // For-Schleife für x kleiner Anzahl Schritte
-          digitalWrite(stepPin, HIGH);                                  // Senden der Pulse für einen Schritt an den Steppermotor
-          delayMicroseconds(500);
-          digitalWrite(stepPin, LOW);
-          delayMicroseconds(500);
-          Serial.println(x);
-        } //forschritteschleifeend
+        int halbschritt = aschritte / 2;  //muss ich eventuell wegnehmen, wenn ich anderst mache
+        drehung(halbschritt, 0);
       }//ifort1end
 
       if (ort > 4) {
-        int ortlinks = 8 - ort;
-        digitalWrite(dirPin, LOW);                                     // Enables the motor to move in a particular direction
+        int ortlinks = 8 - ort;  //müsste auf 9-ort geändert werden
         for (int j = 0; j < ortlinks; j++) {
-          for (int y = 0; y < aschritte; y++) {                           // For-Schleife für x kleiner Anzahl Schritte
-            digitalWrite(stepPin, HIGH);                                  // Senden der Pulse für einen Schritt an den Steppermotor
-            delayMicroseconds(500);
-            digitalWrite(stepPin, LOW);
-            delayMicroseconds(500);
-            Serial.println(y);
-          } //forschritteschleifeend
+          drehung(aschritte, 1);
         }//forortschleife
-        int halbschritt = aschritte / 2;
-        for (int x = 0; x < halbschritt ; x++) {                         // For-Schleife für x kleiner Anzahl Schritte
-          digitalWrite(stepPin, HIGH);                                  // Senden der Pulse für einen Schritt an den Steppermotor
-          delayMicroseconds(500);
-          digitalWrite(stepPin, LOW);
-          delayMicroseconds(500);
-          Serial.println(x);
-        } //forschritteschleifeend
+        int halbschritt = aschritte / 2; //muss ich eventuell wegnehmen, wenn ich anderst mache
+        drehung(halbschritt, 1);
       }//ifort2end
       incomingByte = 0;                                               // incomingByte wieder auf 0
     }//ifSend
+
+    if (incomingByte == 'K') {
+      drehung (2, 0);
+      incomingByte = 0;                                               // incomingByte wieder auf 0
+    }//ifKend
+
+    if (incomingByte == 'L') {
+      drehung (2, 1);
+      incomingByte = 0;                                               // incomingByte wieder auf 0
+    }//ifLend
+
+    if (incomingByte == 'V') {
+      vergleichen(messungen, 20);
+    }//ifVend
+
+    if (incomingByte == 'E') {
+      if (ort <= 4) {
+        Serial.println("Messung Laser");                              // Messung an kürzester Stelle
+        delay(500);
+        drehung(50, 1);                                               // Drehung um 90 Grad
+        Serial.println("Messung Laser");                              // Messung an 90 Grad Stelle
+        delay(500);
+        drehung(35, 1);                                               // Drehung um 63 Grad
+        Serial.println("Messung Laser");                              // 1 Messung zum Erkennen der Geometrie
+        delay(500);
+        drehung(15, 1);                                               // Drehung zu 180 Grad
+        Serial.println("Messung Laser");                              // Messung an 180 Grad Stelle
+        delay(500);
+        drehung(15, 1);                                               // Drehung um 27 Grad
+        Serial.println("Messung Laser");                              // 2 Messung zum Erkennen der Geometrie
+        delay(500);
+        drehung(35, 1);                                               // Drehung zu 270 Grad
+        Serial.println("Messung Laser");                              // Messung an 270 Grad Stelle
+        delay(500);
+      }//ifort1end
+
+      if (ort > 4) {
+        Serial.println("Messung Laser");                              // Messung an kürzester Stelle
+        delay(500);
+        drehung(50, 0);                                               // Drehung um 90 Grad
+        Serial.println("Messung Laser");                              // Messung an 90 Grad Stelle
+        delay(500);
+        drehung(35, 0);                                               // Drehung um 63 Grad
+        Serial.println("Messung Laser");                              // 1 Messung zum Erkennen der Geometrie
+        delay(500);
+        drehung(15, 0);                                               // Drehung zu 180 Grad
+        Serial.println("Messung Laser");                              // Messung an 180 Grad Stelle
+        delay(500);
+        drehung(15, 0);                                               // Drehung um 27 Grad
+        delay(500);
+        Serial.println("Messung Laser");                              // 2 Messung zum Erkennen der Geometrie
+        delay(500);
+        drehung(35, 0);                                               // Drehung zu 270 Grad
+        Serial.println("Messung Laser");                              // Messung an 270 Grad Stelle
+        delay(500);
+      }//ifort2end
+      incomingByte = 0;                                               // incomingByte wieder auf 0
+    }//ifEend
 
   }//ifendserialavailable
 }//loopend
