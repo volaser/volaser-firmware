@@ -1,79 +1,103 @@
-/*     Dieses Programm lässt den Stepper in den richtigen Gradschritten einmal im Kreis drehen.
- */
+/******************************************************************************
+TestRun.ino
+TB6612FNG H-Bridge Motor Driver Example code
+Michelle @ SparkFun Electronics
+8/20/16
+https://github.com/sparkfun/SparkFun_TB6612FNG_Arduino_Library
 
+Uses 2 motors to show examples of the functions in the library.  This causes
+a robot to do a little 'jig'.  Each movement has an equal and opposite movement
+so assuming your motors are balanced the bot should end up at the same place it
+started.
 
-// defines pins numbers
-const int stepPin = 14; //Achtung, bei unserem Motorentreiber sind Step und Dir Anschlüsse vertauscht.
-const int dirPin = 26;
-const int enPin = 12;
-// define variables
-int y = 0;
-int z = 0;
-float schritt = 1.8; // deg/step of motor
-float n = 10; // Anzal Messungen, die ich will
-float s = 360/n; // Grad, die zwischen Messungen gefahren werden müssen
-float aschritte = s/schritt; // Anzal Schritte, die zwischen den Messungen gemacht werden müssen
+Resources:
+TB6612 SparkFun Library
 
- 
-void setup() {
-  // Sets the two pins as Outputs
-  pinMode(stepPin,OUTPUT); 
-  pinMode(dirPin,OUTPUT);
-  pinMode(enPin,OUTPUT);
-  Serial.begin(9600);
-  Serial.print("Grad pro Schritt Motor: ");
-  Serial.println(schritt);
-  Serial.print("Anzahl Messungen: ");
-  Serial.println(n);
-  Serial.print("Anzahl Grad zwischen Messungen: ");
-  Serial.println(s);
-  Serial.print("Anzahl Schritte: ");
-  Serial.println(aschritte);
+Development environment specifics:
+Developed on Arduino 1.6.4
+Developed with ROB-9457
+******************************************************************************/
+
+// This is the library for the TB6612 that contains the class Motor and all the
+// functions
+#include <SparkFun_TB6612.h>
+
+// Pins for all inputs, keep in mind the PWM defines must be on PWM pins
+// the default pins listed are the ones used on the Redbot (ROB-12097) with
+// the exception of STBY which the Redbot controls with a physical switch
+#define AIN1 4
+#define BIN1 7
+#define AIN2 3
+#define BIN2 8
+#define PWMA 2
+#define PWMB 6
+#define STBY 5
+
+// these constants are used to allow you to make your motor configuration 
+// line up with function names like forward.  Value can be 1 or -1
+const int offsetA = 1;
+const int offsetB = 1;
+
+// Initializing motors.  The library will allow you to initialize as many
+// motors as you have memory for.  If you are using functions like forward
+// that take 2 motors as arguements you can either write new functions or
+// call the function more than once.
+Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
+//Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
+
+void setup()
+{
+ //Nothing here
 }
-void loop() {
 
-  Serial.println("Stepper fährt zur kürzesten Distanz von der ersten Messung");
-  digitalWrite(dirPin, LOW); // Drehen des Steppers um einige Grad nach links von der zuvor kürzesten Distanz
-  for(z; z < 10; z++) {
-    digitalWrite(stepPin,HIGH);
-    delayMicroseconds(500);
-    digitalWrite(stepPin,LOW);
-    delayMicroseconds(500);
-  }
-  delay(1000);
-  Serial.println("Stepper befindet sich nun am rechten Ende der kleinsten Messung");
-    
-  digitalWrite(dirPin,HIGH); // Enables the motor to move in a particular direction
-  for(y; y < 10 ; y++){
-    Serial.print("Messunglaser ");
-    Serial.println(y);
-    delay(1000);
-    Serial.print("Drehung ");
-    Serial.print(y);
-    Serial.println();
-  // Makes 200 pulses for making one full cycle rotation
-    for(int x = 0; x < 2; x++) {
-      digitalWrite(stepPin,HIGH); 
-      delayMicroseconds(500); 
-      digitalWrite(stepPin,LOW); 
-      delayMicroseconds(500); 
-      Serial.print(x);
-    }
-    Serial.println();
-    delay(1000); // One second delay
-    
-  }
 
-  Serial.println("Stepper befindet sich nun am linken Ende der kleinsten Messung");
-  
-  
-  digitalWrite(dirPin,LOW); //Changes the rotations direction
-  // Makes 400 pulses for making two full cycle rotation
-  for(y; y < 400; y++) {
-    digitalWrite(stepPin,HIGH);
-    delayMicroseconds(500);
-    digitalWrite(stepPin,LOW);
-    delayMicroseconds(500);
-  }
-  delay(1000);
+void loop()
+{
+   //Use of the drive function which takes as arguements the speed
+   //and optional duration.  A negative speed will cause it to go
+   //backwards.  Speed can be from -255 to 255.  Also use of the 
+   //brake function which takes no arguements.
+   motor1.drive(255,500);
+   motor1.drive(-255,500);
+   motor1.brake();
+   delay(1000);
+   
+//   //Use of the drive function which takes as arguements the speed
+//   //and optional duration.  A negative speed will cause it to go
+//   //backwards.  Speed can be from -255 to 255.  Also use of the 
+//   //brake function which takes no arguements.
+//   motor2.drive(255,1000);
+//   motor2.drive(-255,1000);
+//   motor2.brake();
+//   delay(1000);
+//   
+//   //Use of the forward function, which takes as arguements two motors
+//   //and optionally a speed.  If a negative number is used for speed
+//   //it will go backwards
+//   forward(motor1, motor2, 150);
+//   delay(1000);
+//   
+//   //Use of the back function, which takes as arguments two motors 
+//   //and optionally a speed.  Either a positive number or a negative
+//   //number for speed will cause it to go backwards
+//   back(motor1, motor2, -150);
+//   delay(1000);
+//   
+//   //Use of the brake function which takes as arguments two motors.
+//   //Note that functions do not stop motors on their own.
+//   brake(motor1, motor2);
+//   delay(1000);
+//   
+//   //Use of the left and right functions which take as arguements two
+//   //motors and a speed.  This function turns both motors to move in 
+//   //the appropriate direction.  For turning a single motor use drive.
+//   left(motor1, motor2, 100);
+//   delay(1000);
+//   right(motor1, motor2, 100);
+//   delay(1000);
+//   
+//   //Use of brake again.
+//   brake(motor1, motor2);
+//   delay(1000);
+   
 }
