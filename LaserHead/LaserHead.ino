@@ -1,5 +1,15 @@
-/* Dieses Programm soll über das Handy ausgelöst die einzelnen Schritte des Programms auslösen, baut auf dem Funktionalen Schlussprogramm auf*/
-//funktioniert perfekt
+/*(14.05.18) FSchlussprogramm2 basiert auf Fschlussprogramm1 jedoch mit folgenden Änderungen:*/
+
+//Led die aufblinkt statt Text bei Sludge zu nahe: funktioniert (14.05.18)
+//Schieberegler weg : funktioniert (14.05.18)
+//Auswahltaste für erste und folgende Messungen: eingebaut auf V1 aber führt noch nichts aus -> nächstes Programm (14.05.18)
+//Kommunikation verbessern: funktioniert (14.05.18)
+//accumulation rate hinzufügen: funktioniert (15.05.18)
+//Am Schluss alles gedrehte zurückfahren: funktioniert (15.05.18)
+//Überprüfen ob 10te Messung = 10.00, falls ja, Flächenmessung wiederholen, mit anderem Winkel: funktioniert noch nicht
+//Eingabe Terminal ändern je nach Messung: -> nächstes Programm
+//Ablauf bei n-ter Messung anderst: -> nächste Programm
+
 
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -37,9 +47,11 @@ int programmzaehler = 0;                                              // Um durc
 int entscheidungsvariable = 0;
 int printnr = 0;                                                      // Um zu definieren, welchen Schritt man printen möchte
 int counter = 0;                                                      // Um zu definieren, dass das Printen nur einmal geschieht
-int Startpositionbestaetigung = 0;                                    // Um die Startposition zu bestätigen
+int Startpositionbestaetigung1 = 0;                                    // Um die Startposition zu bestätigen
 int Startpositionbestaetigung2 = 0;                                   // Um die zweite Startposition zu bestätigen
-int Startmessungsbestaetigung = 0;                                     // Um den Start der Messung auszulösen
+int Startpositionbestaetigung3 = 0;                                     // Um den Start der Messung auszulösen
+int nummermessung = 0;                                                // Ist = 0 bei der ersten Messung und = 1 bei allen folgenden Messungen
+int schlussschritte = 0;                                              // Gibt vor, wie weit der Motor zurückgedreht werden muss am Schluss
 float differenz = 0;
 float tiefeTank = 0;
 float tiefeSonde = 0;
@@ -47,6 +59,8 @@ float tiefeSludge = 0;
 float flaecheTank = 0;
 float volumenTank = 0;
 float volumenSludge = 0;
+float volumenSludgealt = 0;
+float accumulationrate = 0;
 float fuellstand = 0;
 float eingabe = 0;
 float ergebniss = 0;
@@ -61,15 +75,27 @@ char auth[] = "a619eecff4f54be7b975ff76b23f81b4";
 char ssid[] = "qkn-11345"; //"Ammandips iPhone Neu";
 char pass[] = "8z2m-lygk-zhfg-i00y";//"guggi113";
 
+
+//Attach WidgetLED to Virtual Pin V0
+WidgetLED led1(V0);
+
+//BLYNK_WRITE(V1)
+//{
+//  entscheidungsvariable = param.asInt(); // assigning incoming value from pin V1 to a variable
+//  // You can also use:
+//  // String i = param.asStr();
+//  // double d = param.asDouble();
+//  Serial.print("V1 Slider value is: ");
+//  Serial.println(entscheidungsvariable);
+//}//WriteV1end
+
+// This function will be called every time Butten Widget
+// in Blynk app writes values to the Virtual Pin V1
 BLYNK_WRITE(V1)
 {
-  entscheidungsvariable = param.asInt(); // assigning incoming value from pin V1 to a variable
-  // You can also use:
-  // String i = param.asStr();
-  // double d = param.asDouble();
-  Serial.print("V1 Slider value is: ");
-  Serial.println(entscheidungsvariable);
-}//WriteV1end
+  nummermessung = param.asInt(); // assigning incoming value from pin V6 to a variable
+
+}
 
 
 BLYNK_WRITE(V2)
@@ -98,7 +124,7 @@ BLYNK_WRITE(V4)
 // in Blynk app writes values to the Virtual Pin V5
 BLYNK_WRITE(V5)
 {
-  Startpositionbestaetigung = param.asInt(); // assigning incoming value from pin V5 to a variable
+  Startpositionbestaetigung1 = param.asInt(); // assigning incoming value from pin V5 to a variable
 
 }
 
@@ -114,9 +140,10 @@ BLYNK_WRITE(V6)
 // in Blynk app writes values to the Virtual Pin V7
 BLYNK_WRITE(V7)
 {
-  Startmessungsbestaetigung = param.asInt(); // assigning incoming value from pin V6 to a variable
+  Startpositionbestaetigung3 = param.asInt(); // assigning incoming value from pin V6 to a variable
 
 }
+
 
 void setup() {
 
@@ -138,13 +165,17 @@ void setup() {
   Blynk.begin(auth, ssid, pass);                                      // Beginnen der seriellen Kommunikation mit der Blynk App
   int entscheidungsvariable = 0;
   lcd.clear();
-  lcd.print(0, 0, "Start Messung");
-  terminal.println("Start Messung");
+  // lcd.print(0, 0, "Start Messung");
+  terminal.println("Choose number of measurement on #measurement");
+  terminal.println("Note GPS");
+  terminal.println("Position Tripod");
+  terminal.println("If positioned press SP1");
   terminal.flush();
   Blynk.virtualWrite(V5, LOW);
   Blynk.virtualWrite(V6, LOW);
   Blynk.virtualWrite(V7, LOW);
   Blynk.virtualWrite(V1, 0);
+  led1.off();
 
   delay(50);
   Serial2.write("O");
@@ -161,6 +192,7 @@ void drehung(int schritte, int richtung) {
       digitalWrite(stepPin, LOW);
       delayMicroseconds(500);
       Serial.println(x);
+      schlussschritte++;
     } //forschritteschleifeend
   }//ifend
   if ( richtung == 1) {
@@ -171,6 +203,7 @@ void drehung(int schritte, int richtung) {
       digitalWrite(stepPin, LOW);
       delayMicroseconds(500);
       Serial.println(x);
+      schlussschritte--;
     } //forschritteschleifeend
   }//ifend
 }//drehungend
@@ -282,9 +315,6 @@ void loop() { // run over and over
   if (distancen != 0) {                                               // Wenn der Wert von distancen nicht gleich 0 ist,
     messungenn[z] = distancen;                                        // wird sie an der Stelle z in den array messungenn geschrieben
     Serial.println(messungenn[z]);
-    //    lcd.print(0, 1, "L2:");
-    //    lcd.print(4, 1, messungenn[z]);
-    //    lcd.print(10, 1, "m");
     z++;
   }
 
@@ -292,24 +322,25 @@ void loop() { // run over and over
 
   switch (entscheidungsvariable) {
     case 1:
-      //programm erster schritt, wo der laser 2 eine messung macht und laser 1 noch aus ist
+      //1. Schritt Programm, Laser 1 aus, Laser 2 ein, sobald SP1 bestätigt wird, macht Laser 2 eine Messung -> gespeichert in Array messungenn[0]
+      z = 0;
       printnr = 1;
       counter = 0;
-      lcd.clear();
-      lcd.print(0, 0, "Schritt 1");
-      terminal.println("Schritt 1");
-      terminal.flush();
+      //lcd.clear();
+      //lcd.print(0, 0, "Schritt 1");
+      //terminal.println("Schritt 1");
+      //terminal.flush();
       Serial.println("Laser 1 aus");
       delay(1000);
       Serial.println("Laser 2 ein");
       Serial.println("Messung Laser 2, Laser 2 befindet sich zu oberst beim Tripod -> Speichern Wert in Array messungenn an Stelle 1.");
-      z = 0;
       Serial2.write("D");
       delay(1000);
       entscheidungsvariable = 0;
       break;
     case 2:
-      //programm zweiter schritt, wenn man das Gerät runterlässt und Laser 2 überprüft, dass Sludge nicht zu nahe und Laser 1 angeht für Positionierung
+      //2. Schritt Programm:Laser 1 geht an, um die Positionierung zu vereinfachen, Laser 2 überprüft Abstand zum Sludge, warnt im Notfall
+      //warten bis SP2 bestätigt
       Serial.println("Laser 2 überprüft während dem runterfahren, dass der Sludge nicht zu nahe kommt");
       z = 1;
       printnr = 2;
@@ -323,8 +354,9 @@ void loop() { // run over and over
       entscheidungsvariable = 0;
       break;
     case 3:
-      //Programm dritter Schritt, wo der Laser 1 anfängt Messungen zu machen, damit man die Tankgeometrie sieht und Laser 2 weiter misst, um die
+      //3. Schritt Programm: Laser 1 fängt an Messungen zu machen, damit man die Tankgeometrie sieht und Laser 2 weiter misst, um die
       //zurückgelegte Distanz herauszugeben
+      //warten bis SP3 bestätigt
       Serial.println("Laser 1 geht an, um Positionierung zu vereinfachen, macht keine Messungen, nur Laserpunkt zur Positionierung");
       delay(1000);
       Serial.println("Laser 2 überprüft immer noch Abstand zum Sludge");
@@ -345,32 +377,13 @@ void loop() { // run over and over
       entscheidungsvariable = 0;
       break;
     case 4:
-      //programm vierter Schritt, Messung startet
-      //      Serial.println("Start Messung");
-      //      delay(1000);
-      //      Serial.println("Tankfläche wird ausgegeben");
-      //      delay(1000);
-      //      Serial.println("Schreiben Messung fertig, fortfahren mit Sonde");
-      //      delay(1000);
-      //      Serial.println("Fragen für Messwert von Sonde einfügen");
-      //      delay(1000);
-      //      Serial.println("Schritt 5 fertig");
-
-      if (Startmessungsbestaetigung == 1) {
-        incomingByte = 'T';
-        counter = 0;
-        y = 0;
-        entscheidungsvariable = 0;
-      }
-      break;
-    case 5:
       //programm fünfter Schritt, Messung Sonde
       Serial.println("Eingabe Messwert Sonde");
       delay(1000);
-      terminal.println("Bitte Messwert der Sonde eingeben.");
-      terminal.print("Messwert Sonde: ");
+      terminal.println("Insert measurement of stick");
+      terminal.print("Measurement stick: ");
       terminal.flush();
-      printnr = 5;
+      printnr = 4;
       entscheidungsvariable = 0;
       break;
 
@@ -380,27 +393,45 @@ void loop() { // run over and over
       break;
   }//switchend
 
+  if (Startpositionbestaetigung1 == 1) {
+    entscheidungsvariable = 1;
+    Startpositionbestaetigung1 = 0;
+  }//ifknopfgedrücktend
+
   if (printnr == 1 && counter == 10) {
     lcd.print(0, 1, "L2:");
     lcd.print(4, 1, messungenn[0]);
     lcd.print(10, 1, "m");
+    terminal.println("Move device to SP2");
+    terminal.println("If positioned, press SP2");
+    terminal.flush();
     printnr = 0;
+    entscheidungsvariable = 2;
   }//printnr1counter10end
 
   if (printnr == 2 && counter == 10) {
     lcd.print(0, 1, "L2:");
     lcd.print(4, 1, messungenn[1]);
     lcd.print(10, 1, "m");
+    if (messungenn[1] <= 0.2 && messungenn[1] > 0.1) {
+      Blynk.setProperty(V0, "color", "#ED9D00");
+      led1.on();
+    }//ifmessungenzunahe0.2end
     if (messungenn[1] <= 0.1) {
-      lcd.clear();
-      lcd.print(0, 0, "Achtung!");
-      terminal.println("Achtung Sludge zu nahe!");
+      Blynk.setProperty(V0, "color", "#D3435C");
+      led1.on();
+    }//ifmessungenzunahe0.1end
+    if (messungenn[1] > 0.2) {
+      led1.off();
+    }//ifmessungennichtzunahe
+    if (Startpositionbestaetigung2 == 1) {
+      terminal.println("Move to desired SP3");
+      terminal.println("If desired SP3 reached, press SP3");
       terminal.flush();
-    }//ifmessungenzunaheend
-    if (Startpositionbestaetigung == 1) {
-      entscheidungsvariable = 0;
+      entscheidungsvariable = 3;
+      printnr = 0;
     }//ifknopfgedrücktend
-    if (Startpositionbestaetigung == 0) {
+    if (Startpositionbestaetigung2 == 0) {
       entscheidungsvariable = 2;
     }//ifknopfnichtgedrücktend
   }//printnr2counter10end
@@ -414,19 +445,32 @@ void loop() { // run over and over
     lcd.print(0, 1, "D: ");
     lcd.print(2, 1, differenz);
     lcd.print(8, 1, "m");
+    if (messungenn[2] <= 0.2 && messungenn[2] > 0.1) {
+      Blynk.setProperty(V0, "color", "#ED9D00");
+      led1.on();
+    }//ifmessungenzunahe0.2end
     if (messungenn[2] <= 0.1) {
-      terminal.println("Achtung Sludge zu nahe!");
+      Blynk.setProperty(V0, "color", "#D3435C");
+      led1.on();
+    }//ifmessungenzunahe0.1end
+    if (messungenn[2] > 0.2) {
+      led1.off();
+    }//ifmessungennichtzunahe
+    if (Startpositionbestaetigung3 == 1) {
+      terminal.println("Wait till measurement finished");
       terminal.flush();
-    }//ifmessungenzunaheend
-    if (Startpositionbestaetigung2 == 1) {
+      printnr = 0;
+      incomingByte = 'T';
+      counter = 0;
+      y = 0;
       entscheidungsvariable = 0;
     }//ifknopfgedrücktend
-    if (Startpositionbestaetigung2 == 0) {
+    if (Startpositionbestaetigung3 == 0) {
       entscheidungsvariable = 3;
     }//ifknopfnichtgedrücktend
   }//printnr2counter10end
 
-  if (printnr == 5 && tiefeSonde != 0) {
+  if (printnr == 4 && tiefeSonde != 0) {
     terminal.print(tiefeSonde);
     terminal.println(" m");
     terminal.flush();
@@ -435,6 +479,7 @@ void loop() { // run over and over
     volumenTank = volumenberechnung(tiefeTank, flaecheTank);
     volumenSludge = volumenberechnung(tiefeSludge, flaecheTank);
     fuellstand = (volumenSludge / volumenTank) * 100;
+    accumulationrate = volumenSludge - volumenSludgealt;
     Serial.println("Ausgabe Tanktiefe = Messwert Sonde - (Startwert Laser - Startwert Messung)");
     Serial.println(tiefeTank);
     terminal.print("Tanktiefe: ");
@@ -470,15 +515,23 @@ void loop() { // run over and over
     terminal.println(" %");
     terminal.flush();
     delay(1000);
+    Serial.println("Accumulation Rate = Sludgevolumenneu - Sludgevolumenalt"); //Diese nur Printen, wenn Messung N
+    Serial.println(accumulationrate);
+    terminal.print("Accumulation rate: ");
+    terminal.print(accumulationrate);
+    terminal.println(" m^3");
+    terminal.flush();
+    delay(1000);
     lcd.clear();
-    lcd.print(0, 0, "TV:");
-    lcd.print(3, 0, volumenTank);
+    lcd.print(0, 0, "TV:");                     //Nur Printen, wenn erste Messung, sonst Accumulation rate ausgeben, ich denke, ich mache in Tab 2
+    lcd.print(3, 0, volumenTank);               // eine Ausgabe auf 2 LCD screens mit allen Schlusswerten: Distanz, Tanktiefe, Sludgevolumen, Tankvolumen, Accumulation Rate
     lcd.print(9, 0, "m^3");
     lcd.print(0, 1, "SV:");
     lcd.print(3, 1, volumenSludge);
     lcd.print(9, 1, "m^3");
     Serial.println("Schritt 5 fertig");
     printnr = 0;
+    entscheidungsvariable = 0;
   }//printnr1counter10end
 
   if (incomingByte == 'T' && counter == 0) {                //In diesem Abschnitt werden die 10 ersten Messungen gemacht
@@ -607,17 +660,17 @@ void loop() { // run over and over
 
   if (incomingByte == 'T' && counter == 134) {                    // Berechnet die Fläche und das Volumen
     //printen(messungen, 40, 0);
+    Serial.println(schlussschritte);
     printen(messungenn, 3, 0);
+    drehung(schlussschritte, 1);
     flaecheTank = flaecheberechnen(messungen);
     Serial.println(' ');
     Serial.println("Fläche: ");
     Serial.println(flaecheTank);
-    //    float volumen = volumenberechnung(messungenn, flaeche);
-    //    Serial.println(' ');
-    //    Serial.println("Volumen: ");
-    //    Serial.println(volumen);
+    terminal.println("Measurement finished");
+    terminal.flush();
     incomingByte = 0;                                                     // incomingByte wieder auf 0
-    Startmessungsbestaetigung = 0;
+    entscheidungsvariable = 4;
   }//ifendB
 
   counter++;
