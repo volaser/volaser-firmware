@@ -29,6 +29,12 @@ const int stepPin = 14; // defines the stepPin of the stepper - motor driver
 const int dirPin = 26;  // defines the dirPin of the stepper - motor driver
 const int enPin = 12;   // defines the enPin of the stepper - motor driver
 
+enum rotation_direction
+{
+  ROTATE_CLOCKWISE,
+  ROTATE_COUNTER_CLOCKWISE
+};
+
 float deg_step = 1.8;    // deg/step of motor
 float rotation_div = 10; // Anzal measurements that I want
 float s =
@@ -39,7 +45,7 @@ int y = 0; // Variable to write the measurements of laser 1 in the array
            // measurements to the right place
 int z = 0; // Variable to measure the measurements of Laser 2 in the array to
            // the to write the right job
-int ort = 100;
+int minimum_position = 100;
 int zaehler = 10;
 
 // Generate the array of measurements to be registered
@@ -56,15 +62,14 @@ char incomingByte = 0; // Variable to trigger the individual steps
 // To minimum search, as soon as False account reaches the value 2 has, the
 // program is finished
 int falsecount = 0;
-int drehrichtung =
-    0;                   // To determine the direction of rotation for the minimum search
-int programmzaehler = 0; // To guide through the program
+enum rotation_direction direction = ROTATE_CLOCKWISE; // To determine the direction of rotation for the minimum search
+int programmzaehler = 0;                              // To guide through the program
 int state = 0;
-int printnr = 0;                    // To define which step you want to print
-int counter = 0;                    // To define that the printing is done only once
-int Startpositionbestaetigung1 = 0; // To confirm the start position
-int Startpositionbestaetigung2 = 0; // To confirm the second start position
-int Startpositionbestaetigung3 = 0; // To trigger the start of the measurement
+int printnr = 0;        // To define which step you want to print
+int counter = 0;        // To define that the printing is done only once
+int start_confirm1 = 0; // To confirm the start position
+int start_confirm2 = 0; // To confirm the second start position
+int start_confirm3 = 0; // To trigger the start of the measurement
 
 // is =0 for the first measurement and =1 for all subsequent measurements
 int not_first_measurement = 0;
@@ -103,8 +108,7 @@ WidgetLED led1(V0);
 // This function will be called every time Butten Widget
 // in Blynk app writes values to the Virtual Pin V1
 BLYNK_WRITE(V1)
-{
-  // assigning incoming value from pin V1 to a variable
+{ // assigning incoming value from pin V1 to a variable
   not_first_measurement = param.asInt();
 }
 
@@ -112,24 +116,21 @@ BLYNK_WRITE(V1)
 // in Blynk app writes values to the Virtual Pin V2
 BLYNK_WRITE(V2)
 {
-  Startpositionbestaetigung1 =
-      param.asInt(); // assigning incoming value from pin V2 to a variable
+  start_confirm1 = param.asInt(); // assigning incoming value from pin V2 to a variable
 }
 
 // This function will be called every time Butten Widget
 // in Blynk app writes values to the Virtual Pin V3
 BLYNK_WRITE(V3)
 {
-  Startpositionbestaetigung2 =
-      param.asInt(); // assigning incoming value from pin V3 to a variable
+  start_confirm2 = param.asInt(); // assigning incoming value from pin V3 to a variable
 }
 
 // This function will be called every time Butten Widget
 // in Blynk app writes values to the Virtual Pin V4
 BLYNK_WRITE(V4)
 {
-  Startpositionbestaetigung3 =
-      param.asInt(); // assigning incoming value from pin V4 to a variable
+  start_confirm3 = param.asInt(); // assigning incoming value from pin V4 to a variable
 }
 
 // This function will be called every time Butten Widget
@@ -230,9 +231,9 @@ void setup()
   Serial2.write("O");
 }
 
-void rotation(int steps, int direction)
+void rotation(int steps, enum rotation_direction direction)
 {
-  if (direction == 0)
+  if (direction == ROTATE_CLOCKWISE)
   {
     // Enables the motor to move in a particular direction
     digitalWrite(dirPin, HIGH);
@@ -248,7 +249,7 @@ void rotation(int steps, int direction)
       schlussschritte++;
     }
   }
-  if (direction == 1)
+  if (direction == ROTATE_COUNTER_CLOCKWISE)
   {
     // Enables the motor to move in a particular direction
     digitalWrite(dirPin, LOW);
@@ -287,7 +288,6 @@ int find_minimum(float measurements[], int length)
       min_index = i;
     }
   }
-  ort = min_index;
   Serial.print("The shortest distange is ");
   Serial.println(measurements[min_index]);
   Serial.print(" at index ");
@@ -316,7 +316,7 @@ void compare_measurements(float messergebnisse[], int laenge)
       {
         // The first time the loop is executed, the
         // Direction of motor rotation changed
-        drehrichtung = 1;
+        direction = ROTATE_COUNTER_CLOCKWISE;
       }
     }
   }
@@ -365,7 +365,12 @@ void loop()
       break;
     }
   }
-
+  char seperator1 = ' '; // separator1 corresponds to the honor sign
+  char seperator2 = 'm'; // separator2 corresponds to m after measurement
+  int index1 = sensorRead.indexOf(seperator1);
+  int index2 = sensorRead.indexOf(seperator2);
+  String firstString = sensorRead.substring(index1 + 1, index2); // generates a new string starting with firstString
+                                                                 // from index1 + 1 to index2
   while (Serial2.available())
   {
     // Wait until serial input of laser 1 is available
@@ -383,20 +388,11 @@ void loop()
     }
   }
 
-  char seperator1 = ' '; // separator1 corresponds to the honor sign
-  char seperator2 = 'm'; // separator2 corresponds to m after measurement
-
-  // index1 indicates the position of separator1 in the string
-  int index1 = sensorRead.indexOf(seperator1);
-  // index2 indicates the position of separator2 in the string
-  int index2 = sensorRead.indexOf(seperator2);
-  String firstString = sensorRead.substring(index1 + 1, index2); // generates a new string starting with firstString
-                                                                 // from index1 + 1 to index2
-  char buf[20] = "";                                             // generates an empty char array of length 20
-  firstString.toCharArray(buf, 20);                              // the string firstString is transformed to a charstring
-                                                                 // and written in buf
-  float distance = atof(buf);                                    // the char string buf will be converted into a float and stored in
-                                                                 // of the variable distance is stored
+  char buf[20] = "";                // generates an empty char array of length 20
+  firstString.toCharArray(buf, 20); // the string firstString is transformed to a charstring
+                                    // and written in buf
+  float distance = atof(buf);       // the char string buf will be converted into a float and stored in
+                                    // of the variable distance is stored
   if (distance != 0)
   { // If the value of distance is not equal to 0,
     Serial.println(sensorRead);
@@ -447,7 +443,7 @@ void loop()
       terminal.print("D: ");
       terminal.flush();
       state = 0;
-    } // iffolgemessung
+    }
     break;
   case 2:
     // Step 2 Program:Laser 1 approaches to position the
@@ -552,10 +548,10 @@ void loop()
     resetstatus = 0;
   }
 
-  if (Startpositionbestaetigung1 == 1)
+  if (start_confirm1 == 1)
   {
     state = 1;
-    Startpositionbestaetigung1 = 0;
+    start_confirm1 = 0;
   }
 
   if (printnr == 1 && counter == 10)
@@ -589,7 +585,7 @@ void loop()
     {
       led1.off();
     }
-    if (Startpositionbestaetigung2 == 1)
+    if (start_confirm2 == 1)
     {
       terminal.println("Move to desired SP3");
       terminal.println("If desired SP3 reached, press SP3");
@@ -597,7 +593,7 @@ void loop()
       state = 3;
       printnr = 0;
     }
-    if (Startpositionbestaetigung2 == 0)
+    if (start_confirm2 == 0)
     {
       state = 2;
     }
@@ -636,7 +632,7 @@ void loop()
     {
       led1.off();
     }
-    if (Startpositionbestaetigung3 == 1)
+    if (start_confirm3 == 1)
     {
       if (not_first_measurement == 0)
       {
@@ -656,7 +652,7 @@ void loop()
         state = 0;
       }
     }
-    if (Startpositionbestaetigung3 == 0)
+    if (start_confirm3 == 0)
     {
       state = 3;
     }
@@ -795,38 +791,37 @@ void loop()
     delay(1000);
     for (int i = 0; i < 9; i++)
     {
-      rotation(aschritte, 0); // Making the 9 turns
-      Serial1.write("D");     // Send measurement command to laser 1
+      rotation(aschritte, ROTATE_CLOCKWISE); // Making the 9 turns
+      Serial1.write("D");                    // Send measurement command to laser 1
       delay(1000);
     }
   }
 
-  if (incomingByte == 'T' &&
-      counter == 20)
+  if (incomingByte == 'T' && counter == 20)
   { // In this part, the shortest place of the first 10
     // Measurements rotated
     print_measurement(messungen, 10);
-    find_minimum(messungen, 10);
-    Serial.print(ort);
-    if (ort <= 9)
+    minimum_position = find_minimum(messungen, 10);
+    Serial.print(minimum_position);
+    if (minimum_position <= 9)
     { // Will only be executed if the location is within the 10
       // Measurements located
-      if (ort <= 4)
+      if (minimum_position <= 4)
       { // If the location is in the first 5 entries of the array,
         // the motor continues to rotate in the same direction
-        for (int i = 0; i <= ort; i++)
+        for (int i = 0; i <= minimum_position; i++)
         {
-          rotation(aschritte, 0);
+          rotation(aschritte, ROTATE_CLOCKWISE);
         }
       }
 
-      if (ort > 4)
+      if (minimum_position > 4)
       { // If the location is in the last 5 entries of the array,
         // the motor turns back in the other direction
-        int ortlinks = 9 - ort;
+        int ortlinks = 9 - minimum_position;
         for (int j = 0; j < ortlinks; j++)
         {
-          rotation(aschritte, 1);
+          rotation(aschritte, ROTATE_COUNTER_CLOCKWISE);
         }
       }
     }
@@ -835,11 +830,11 @@ void loop()
   if (incomingByte == 'T' && counter == 21)
   {
     delay(500);
-    rotation(2, 0);
+    rotation(2, ROTATE_CLOCKWISE);
     delay(500);
     Serial1.write("D"); // Send measurement command to laser 1
     delay(1000);
-    rotation(2, 0);
+    rotation(2, ROTATE_CLOCKWISE);
     Serial1.write("D"); // Send measurement command to laser 1
     delay(1000);
   }
@@ -898,18 +893,17 @@ void loop()
       if (zaehler <= 33)
       { // Restricts that you can only get up to the right
         // place in array reads
-        if (falsecount <
-            2)
+        if (falsecount < 2)
         { // Ensures that as long as the new measurement is shorter, in
           // is rotated in the same direction
-          rotation(2, drehrichtung);
+          rotation(2, direction);
           Serial1.write("D"); // Send measurement command to laser 1
           delay(1000);
         }
         if (falsecount == 2)
         { // As soon as the new measurement is longer for the 2nd time
           // is, a piece is turned back
-          rotation(4, 0);
+          rotation(4, ROTATE_CLOCKWISE);
           falsecount = 3; // The wrong counter is set to 3, so that this counter
                           // step will surely not be executed anymore
           counter = 110;  // The program counter is then set to 110,
@@ -927,45 +921,45 @@ void loop()
     y = 34; // Determines the start location of the measurements for the last
             // measurements
     //    Serial2.write("D"); //Send measurement command to Laser 2
-    if (ort <= 4)
+    if (minimum_position <= 4)
     {
       Serial1.write("D"); // Measurement at the shortest point
       delay(1000);
-      rotation(50, 1);    // 90 degree rotation
-      Serial1.write("D"); // Measurement at 90 degrees point
+      rotation(50, ROTATE_COUNTER_CLOCKWISE); // 90 degree rotation
+      Serial1.write("D");                     // Measurement at 90 degrees point
       delay(1000);
-      rotation(35, 1);    // 63 degree rotation
-      Serial1.write("D"); // 1 measurement for recognition of the geometry
+      rotation(35, ROTATE_COUNTER_CLOCKWISE); // 63 degree rotation
+      Serial1.write("D");                     // 1 measurement for recognition of the geometry
       delay(1000);
-      rotation(15, 1);    // 180 degree rotation
-      Serial1.write("D"); // Measurement at 180 degrees point
+      rotation(15, ROTATE_COUNTER_CLOCKWISE); // 180 degree rotation
+      Serial1.write("D");                     // Measurement at 180 degrees point
       delay(1000);
-      rotation(15, 1);    // 27 degree rotation
-      Serial1.write("D"); // 2 Measurement for recognition of geometry
+      rotation(15, ROTATE_COUNTER_CLOCKWISE); // 27 degree rotation
+      Serial1.write("D");                     // 2 Measurement for recognition of geometry
       delay(1000);
-      rotation(35, 1);    // Rotation to 270 degrees
-      Serial1.write("D"); // Measurement at 270 degrees point
+      rotation(35, ROTATE_COUNTER_CLOCKWISE); // Rotation to 270 degrees
+      Serial1.write("D");                     // Measurement at 270 degrees point
       delay(1000);
-    } // ifort1end
+    }
 
-    if (ort > 4)
+    if (minimum_position > 4)
     {
       Serial1.write("D"); // Measurement at the shortest point
       delay(1000);
-      rotation(50, 0);    // 90 degree rotation
-      Serial1.write("D"); // Measurement at 90 degrees point
+      rotation(50, ROTATE_CLOCKWISE); // 90 degree rotation
+      Serial1.write("D");             // Measurement at 90 degrees point
       delay(1000);
-      rotation(35, 0);    // 63 degree rotation
-      Serial1.write("D"); // 1 measurement for recognition of the geometry
+      rotation(35, ROTATE_CLOCKWISE); // 63 degree rotation
+      Serial1.write("D");             // 1 measurement for recognition of the geometry
       delay(1000);
-      rotation(15, 0);    // 180 degree rotation
-      Serial1.write("D"); // Measurement at 180 degrees point
+      rotation(15, ROTATE_CLOCKWISE); // 180 degree rotation
+      Serial1.write("D");             // Measurement at 180 degrees point
       delay(1000);
-      rotation(15, 0);    // 27 degree rotation
-      Serial1.write("D"); // 2 Measurement for recognition of geometry
+      rotation(15, ROTATE_CLOCKWISE); // 27 degree rotation
+      Serial1.write("D");             // 2 Measurement for recognition of geometry
       delay(1000);
-      rotation(35, 0);    // Rotation to 270 degrees
-      Serial1.write("D"); // Measurement at 270 degrees point
+      rotation(35, ROTATE_CLOCKWISE); // Rotation to 270 degrees
+      Serial1.write("D");             // Measurement at 270 degrees point
       delay(1000);
     }
   }
@@ -975,7 +969,7 @@ void loop()
     // Calculates the area and the volume
     Serial.println(schlussschritte);
     print_measurement(messungenn, 3);
-    rotation(schlussschritte, 1);
+    rotation(schlussschritte, ROTATE_COUNTER_CLOCKWISE);
     flaecheTank = calculate_area(messungen);
     Serial.println(' ');
     Serial.println("Fläche: ");
