@@ -21,7 +21,7 @@
 #define SERIAL1_RXPIN 32 // defines the RXPIN of Laser 1
 #define SERIAL1_TXPIN 25 // defines the TXPIN of Laser 1
 #define SERIAL2_RXPIN 27 // defines the RXPIN of Laser 2
-#define SERIAL2_TXPIN 13 // defines the TXPIN of Laser 1
+#define SERIAL2_TXPIN 13 // defines the TXPIN of Laser 2
 #define BLYNK_PRINT Serial
 
 // Attention, with our motor driver Step and you connections are reversed.
