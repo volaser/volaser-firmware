@@ -1,65 +1,72 @@
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEServer.h>
+#include <BLE2902.h>
 
 #include "LaserM703A.h"
-// #include <Stepper.h>
 
 #define SERIAL1_RXPIN 32 // defines the RXPIN of Laser 1
 #define SERIAL1_TXPIN 25 // defines the TXPIN of Laser 1
 #define SERIAL2_RXPIN 27 // defines the RXPIN of Laser 2
 #define SERIAL2_TXPIN 13 // defines the TXPIN of Laser 2
 
-String sensorRead; // Variable to check that all the data from the laser was transferred
 LaserM703A laser(&Serial1, SERIAL2_RXPIN, SERIAL2_TXPIN);
 
-const int stepPin = 14; // defines the stepPin of the stepper - motor driver
-const int dirPin = 26;  // defines the dirPin of the stepper - motor driver
-const int enPin = 12;   // defines the enPin of the stepper - motor driver
+#define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define RX_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define TX_UUID "a812aeed-78d0-474a-b9b1-20a8a1f95463"
 
-enum rotation_direction
+BLECharacteristic *TX_Characteristic = NULL;
+
+class MyCallbacks : public BLECharacteristicCallbacks
 {
-  ROTATE_CLOCKWISE,
-  ROTATE_COUNTER_CLOCKWISE
+  void onWrite(BLECharacteristic *pCharacteristic)
+  {
+    std::string value = pCharacteristic->getValue();
+
+    if (value.length() > 0)
+    {
+      measurement m = laser.measure();
+      Serial.print("Range: ");
+      Serial.println(m.range);
+      char msg[10];
+      sprintf(msg, "%2.3f", m.range);
+      TX_Characteristic->setValue(msg);
+    }
+  }
 };
 
 void setup()
 {
   Serial.begin(115200);
-
-  // Serial1.begin(19200, SERIAL_8N1, SERIAL1_RXPIN, SERIAL1_TXPIN);
   delay(1000);
-  Serial.println("Ready to Go!");
-  pinMode(stepPin, OUTPUT);
-  pinMode(dirPin, OUTPUT);
-  pinMode(enPin, OUTPUT);
+
+  measurement m = laser.measure();
+  Serial.print("Starting Volaser");
+
+  BLEDevice::init("Volaser");
+  BLEServer *pServer = BLEDevice::createServer();
+
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  BLECharacteristic *RX_Characteristic = pService->createCharacteristic(
+      RX_UUID,
+      BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+
+  TX_Characteristic = pService->createCharacteristic(
+      TX_UUID,
+      BLECharacteristic::PROPERTY_READ |
+          BLECharacteristic::PROPERTY_WRITE |
+          BLECharacteristic::PROPERTY_NOTIFY |
+          BLECharacteristic::PROPERTY_INDICATE);
+  TX_Characteristic->addDescriptor(new BLE2902());
+
+  RX_Characteristic->setCallbacks(new MyCallbacks());
+  TX_Characteristic->setValue("hello");
+
+  pService->start();
+
+  pServer->getAdvertising()->start();
 }
 
-void loop()
-{
-  rotation(45, ROTATE_COUNTER_CLOCKWISE);
-  delay(2000);
-  rotation(45, ROTATE_CLOCKWISE);
-  delay(2000);
-}
-
-void rotation(int steps, enum rotation_direction direction)
-{
-  if (direction == ROTATE_COUNTER_CLOCKWISE)
-  {
-    // Enables the motor to move in a particular direction
-    digitalWrite(dirPin, HIGH);
-  }
-  else
-  {
-    digitalWrite(dirPin, LOW);
-  }
-  for (int x = 0; x < steps; x++)
-  {
-    // For loop for x small number of steps
-    // Sending the pulses for one step to the stepper motor
-    digitalWrite(stepPin, HIGH);
-    delayMicroseconds(500);
-    digitalWrite(stepPin, LOW);
-    delayMicroseconds(500);
-    Serial.println(x);
-    delayMicroseconds(5000);
-  }
-}
+void loop() {}
