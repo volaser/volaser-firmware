@@ -1,83 +1,82 @@
-/* (26.05.18) Dieses Programm steuert den MKR1000 in unserem Projekt, welcher den Motor hoch und runter bewegt */
-//hoch runter: (02.06.18) Die Befehle für den SparkFun Treiber hinzugefügt: funktioniert nocht nicht
-//Wert von Sludgeabstand übergeben sodass Runter blockiert wird, sobald sludge zu nahe: funktioniert noch nicht
+// Bluetooth Libraries
+#include <BLEDevice.h>
 
-#define BLYNK_PRINT SerialUSB
+// winch motor controller
+#include "TB6612.h"
 
-
-#include <SPI.h>
-#include <WiFi101.h>
-#include <BlynkSimpleWiFiShield101.h>
-#include <SparkFun_TB6612.h>
-
-// Pins for all inputs, keep in mind the PWM defines must be on PWM pins
-// the default pins listed are the ones used on the Redbot (ROB-12097) with
-// the exception of STBY which the Redbot controls with a physical switch
-#define AIN1 4
-#define BIN1 7
-#define AIN2 3
-#define BIN2 8
-#define PWMA 2
-#define PWMB 6
-#define STBY 5
+// Bluetooth configuration
+// Create unique service, receive and transmission IDs for BLE
+#define SERVICE_UUID "1c228e6c-0907-4fa6-9fef-34103904da21"
+#define RX_UUID "1dd9685e-bd8f-416b-bca2-0b0591709e64"
 
 int pinValueup = 0;
 int pinValuedown = 0;
 
-// these constants are used to allow you to make your motor configuration
-// line up with function names like forward.  Value can be 1 or -1
-const int offsetA = 1;
-const int offsetB = 1;
+// Pins for all inputs, keep in mind the PWM defines must be on PWM pins
+#define IN1 4
+#define IN2 3
+#define PWM 2
+#define STBY 5
+#define OFFSET 1
 
-// Initializing motors.  The library will allow you to initialize as many
-// motors as you have memory for.  If you are using functions like forward
-// that take 2 motors as arguements you can either write new functions or
-// call the function more than once.
-Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
+// Initializing motor controller from SparkFun_TB6612
+Motor motor = Motor(IN1, IN2, PWM, OFFSET, STBY);
 
-// You should get Auth Token in the Blynk App.
-// Go to the Project Settings (nut icon).
-char auth[] = "f0f810652e194433a96d4e4a81e96ab0";
-
-// Your WiFi credentials.
-// Set password to "" for open networks.
-char ssid[] = "Ammandips iPhone Neu"; //"qkn-11345"
-char pass[] = "guggi113"; //"8z2m-lygk-zhfg-i00y"
-
-// This function will be called every time Slider Widget
-// in Blynk app writes values to the Virtual Pin V0
-BLYNK_WRITE(V0)
+// implement a simple callback to parse BLE communications
+class ParseReceive : public BLECharacteristicCallbacks
 {
-  pinValueup = param.asInt(); // assigning incoming value from pin V0 to a variable
+  void onWrite(BLECharacteristic *pCharacteristic)
+  {
+    std::string message = pCharacteristic->getValue();
+    if (message.length() > 0)
+    {
+      // move the laser up
+      if (message[0] == 'U')
+      {
+        motor.drive(255);
+        Serial.println('Up');
+      }
+      // move the laser down
+      else if (message[0] == 'D')
+      {
+        motor.drive(-255);
+        Serial.println('Down');
+      }
+      // otherwise brake the motor
+      else
+      {
+        motor.brake();
+        Serial.println('Brake');
+      }
+    }
+  }
+};
 
-  // process received value
-}//BLYNK_WRITE(V0)end
-
-// This function will be called every time Slider Widget
-// in Blynk app writes values to the Virtual Pin V1
-BLYNK_WRITE(V1)
+void setupBLE()
 {
-  pinValuedown = param.asInt(); // assigning incoming value from pin V1 to a variable
+  // setup bluetooth device with name Volaser
+  BLEDevice::init("Volaser Winch");
+  // create the bluetooth server
+  BLEServer *pServer = BLEDevice::createServer();
+  // create the bluetooth service
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+  // setup a characteristic on this service that we will use for receiving communications
+  BLECharacteristic *RX_Characteristic = pService->createCharacteristic(
+      RX_UUID,
+      BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+  // setup a callback on this receive characteristic that will parse that communication and act
+  RX_Characteristic->setCallbacks(new ParseReceive());
 
-  // process received value
-}//BLYNK_WRITE(V1)end
+  // start the service
+  pService->start();
+  // advertise the service so clients can find it
+  pServer->getAdvertising()->start();
+}
 
 void setup()
 {
-  Blynk.begin(auth, ssid, pass);
-}//setupend
+  // setup bluetooth
+  setupBLE();
+}
 
-void loop()
-{
-  Blynk.run();
-  if (pinValueup == 1) {
-    motor1.drive(255,1);
-  }//ifpinValueup=1end
-  if (pinValuedown == 1) {
-    motor1.drive(-255);
-  }//ifpinValuedown=1end
-  else {
-    motor1.brake();
-  }//elseend
-}//loopend
-
+void loop() {}
