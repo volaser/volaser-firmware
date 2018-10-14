@@ -64,15 +64,13 @@ class ParseReceive : public BLECharacteristicCallbacks
         // These commands are the form R90, or R-30, to rotate to +90 degrees or -30 degrees
         int new_angle = String(message.c_str()).substring(1).toInt();
         // we constrain ourselves to stay within +/-180 degrees
-        if (-180 <= new_angle && new_angle <= 180)
+        if (0 <= new_angle && new_angle <= 360)
         {
-          // I disable the stepper after rotation so it doesn't buzz.
-          stepper.enable();
           stepper.rotate(new_angle - angle);
-          stepper.disable();
           angle = new_angle;
+          Serial.println(angle);
           measurement m = laserH.measure();
-          sprintf(msg, "%2.3f", m.range);
+          sprintf(msg, "%d:%2.3f", angle, m.range);
         }
       }
       TX_Characteristic->setValue(msg);
@@ -113,7 +111,7 @@ void setup()
 {
   // setup the stepper motor
   stepper.begin(MOTOR_RPM, MOTOR_MICROSTEPS);
-  stepper.disable();
+  stepper.enable();
 
   // setup bluetooth
   setupBLE();
