@@ -15,8 +15,8 @@ int pinValuedown = 0;
 // Pins for all inputs, keep in mind the PWM defines must be on PWM pins
 #define IN1 4
 #define IN2 3
-#define PWM 2
-#define STBY 5
+#define PWM 5
+#define STBY 2
 #define OFFSET 1
 
 // Initializing motor controller from SparkFun_TB6612
@@ -34,19 +34,19 @@ class ParseReceive : public BLECharacteristicCallbacks
       if (message[0] == 'U')
       {
         motor.drive(255);
-        Serial.println('Up');
+        Serial.println("Up");
       }
       // move the laser down
       else if (message[0] == 'D')
       {
         motor.drive(-255);
-        Serial.println('Down');
+        Serial.println("Down");
       }
       // otherwise brake the motor
       else
       {
         motor.brake();
-        Serial.println('Brake');
+        Serial.println("Brake");
       }
     }
   }
@@ -77,6 +77,10 @@ void setup()
 {
   // setup bluetooth
   setupBLE();
+
+  // begin serial communication (only needed for debugging))
+  Serial.begin(115200);
+  Serial.println("Starting Volaser Winch");
 }
 
 void loop() {}
