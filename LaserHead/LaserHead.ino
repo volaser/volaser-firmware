@@ -20,8 +20,8 @@ BLECharacteristic *TX_Characteristic = NULL;
 #define SERIAL2_RXPIN 27 // defines the RXPIN of Laser 2
 #define SERIAL2_TXPIN 13 // defines the TXPIN of Laser 2
 
-LaserM703A laserH(&Serial1, SERIAL1_RXPIN, SERIAL1_TXPIN);
-LaserM703A laserV(&Serial2, SERIAL2_RXPIN, SERIAL2_TXPIN);
+LaserM703A laserV(&Serial1, SERIAL1_RXPIN, SERIAL1_TXPIN);
+LaserM703A laserH(&Serial2, SERIAL2_RXPIN, SERIAL2_TXPIN);
 
 // Setup stepper motor control
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step

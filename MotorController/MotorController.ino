@@ -13,10 +13,10 @@ int pinValueup = 0;
 int pinValuedown = 0;
 
 // Pins for all inputs, keep in mind the PWM defines must be on PWM pins
-#define IN1 4
-#define IN2 3
-#define PWM 5
-#define STBY 2
+#define IN1 14
+#define IN2 27
+#define PWM 26
+#define STBY 12
 #define OFFSET 1
 
 // Initializing motor controller from SparkFun_TB6612
