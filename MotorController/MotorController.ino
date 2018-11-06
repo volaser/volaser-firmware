@@ -19,6 +19,9 @@ int pinValuedown = 0;
 #define STBY 12
 #define OFFSET 1
 
+#define LED 5
+#define LED_CHANNEL 1
+
 // Initializing motor controller from SparkFun_TB6612
 Motor motor = Motor(IN1, IN2, PWM, OFFSET, STBY);
 
@@ -34,18 +37,21 @@ class ParseReceive : public BLECharacteristicCallbacks
       if (message[0] == 'U')
       {
         motor.drive(255);
+        ledcWrite(LED_CHANNEL, 32);
         Serial.println("Up");
       }
       // move the laser down
       else if (message[0] == 'D')
       {
         motor.drive(-255);
+        ledcWrite(LED_CHANNEL, 32);
         Serial.println("Down");
       }
       // otherwise brake the motor
       else
       {
         motor.brake();
+        ledcWrite(LED_CHANNEL, 0);
         Serial.println("Brake");
       }
     }
@@ -81,6 +87,21 @@ void setup()
   // begin serial communication (only needed for debugging))
   Serial.begin(115200);
   Serial.println("Starting Volaser Winch");
+
+  pinMode(LED, OUTPUT);
+  ledcAttachPin(LED, LED_CHANNEL);
+  for (int i = 0; i < 5; i++)
+  {
+    ledcWrite(LED_CHANNEL, 255);
+    delay(25);
+    ledcWrite(LED_CHANNEL, 0);
+    delay(25);
+  }
 }
 
-void loop() {}
+int counter = 0;
+void loop()
+{
+  Serial.println(counter++);
+  delay(2000);
+}

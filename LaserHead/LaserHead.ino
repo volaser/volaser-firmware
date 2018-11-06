@@ -26,7 +26,7 @@ LaserM703A laserH(&Serial2, SERIAL2_RXPIN, SERIAL2_TXPIN);
 // Setup stepper motor control
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
 #define MOTOR_STEPS 200
-#define MOTOR_RPM 120
+#define MOTOR_RPM 30
 #define MOTOR_MICROSTEPS 1
 
 #define STEPPER_DIR 26
@@ -49,13 +49,27 @@ class ParseReceive : public BLECharacteristicCallbacks
       if (message[0] == 'V')
       {
         measurement m = laserV.measure();
+        Serial.print("vertical: ");
+        Serial.println(m.range);
         sprintf(msg, "%2.3f", m.range);
       }
       // make a measurement of the horizontal laser
       else if (message[0] == 'H')
       {
         measurement m = laserH.measure();
+        Serial.print("horizontal: ");
+        Serial.println(m.range);
         sprintf(msg, "%2.3f", m.range);
+      }
+      // disable the motor to save power
+      else if (message[0] == 'D')
+      {
+        stepper.disable();
+      }
+      // enable the motor to make a measurement
+      else if (message[0] == 'E')
+      {
+        stepper.enable();
       }
       // rotate the stepper motor to a given angle,
       // and then make a measurement of the horizontal laser
@@ -63,13 +77,18 @@ class ParseReceive : public BLECharacteristicCallbacks
       {
         // These commands are the form R90, or R-30, to rotate to +90 degrees or -30 degrees
         int new_angle = String(message.c_str()).substring(1).toInt();
+        Serial.print("new angle: ");
+        Serial.println(new_angle);
         // we constrain ourselves to stay within +/-180 degrees
         if (0 <= new_angle && new_angle <= 360)
         {
           stepper.rotate(new_angle - angle);
           angle = new_angle;
+          Serial.print("angle: ");
           Serial.println(angle);
           measurement m = laserH.measure();
+          Serial.print("range: ");
+          Serial.println(m.range);
           sprintf(msg, "%d:%2.3f", angle, m.range);
         }
       }
@@ -111,7 +130,7 @@ void setup()
 {
   // setup the stepper motor
   stepper.begin(MOTOR_RPM, MOTOR_MICROSTEPS);
-  stepper.enable();
+  stepper.disable();
 
   // setup bluetooth
   setupBLE();
@@ -119,6 +138,7 @@ void setup()
   // begin serial communication (only needed for debugging))
   Serial.begin(115200);
   Serial.println("Starting Volaser");
+  laserV.measure();
 }
 
 void loop() {}
