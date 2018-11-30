@@ -13,10 +13,10 @@ int pinValueup = 0;
 int pinValuedown = 0;
 
 // Pins for all inputs, keep in mind the PWM defines must be on PWM pins
-#define IN1 14
-#define IN2 27
-#define PWM 26
-#define STBY 12
+#define STBY 13
+#define IN1 12
+#define IN2 14
+#define PWM 27
 #define OFFSET 1
 
 #define LED 5
