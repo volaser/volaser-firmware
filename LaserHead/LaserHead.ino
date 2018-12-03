@@ -1,8 +1,9 @@
-// Bluetooth Libraries
+// Bluetooth libraries
 #include <BLEDevice.h>
 
-// Laser object library
-#include "LaserM703A.h"
+// Laser library
+#include "TFMini.h"
+
 // Stepper motor library
 #include "BasicStepperDriver.h"
 
@@ -15,23 +16,25 @@
 BLECharacteristic *TX_Characteristic = NULL;
 
 // setup communication with laser modules
-#define SERIAL1_RXPIN 32 // defines the RXPIN of Laser 1
-#define SERIAL1_TXPIN 25 // defines the TXPIN of Laser 1
-#define SERIAL2_RXPIN 27 // defines the RXPIN of Laser 2
-#define SERIAL2_TXPIN 13 // defines the TXPIN of Laser 2
+#define LaserV_RX 13 // defines the RXPIN of Vertical Laser
+#define LaserV_TX 12 // defines the TXPIN of Vertical Laser
+#define LaserH_RX 14 // defines the RXPIN of Horizontal Laser
+#define LaserH_TX 27 // defines the TXPIN of Horizontal Laser
 
-LaserM703A laserV(&Serial1, SERIAL1_RXPIN, SERIAL1_TXPIN);
-LaserM703A laserH(&Serial2, SERIAL2_RXPIN, SERIAL2_TXPIN);
+TFMini laserV;
+TFMini laserH;
 
 // Setup stepper motor control
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
 #define MOTOR_STEPS 200
-#define MOTOR_RPM 30
-#define MOTOR_MICROSTEPS 1
+#define MOTOR_RPM 60
+#define MOTOR_MICROSTEPS 16
 
-#define STEPPER_DIR 26
-#define STEPPER_STEP 14
-#define STEPPER_ENABLE 12
+#define STEPPER_DIR 32
+#define STEPPER_STEP 33
+#define STEPPER_MS 25
+#define STEPPER_ENABLE 26
+
 int angle = 0; // keep track of phase of the stepper motor rotation, since there is no encoder.
 
 BasicStepperDriver stepper(MOTOR_STEPS, STEPPER_DIR, STEPPER_STEP, STEPPER_ENABLE);
@@ -44,22 +47,42 @@ class ParseReceive : public BLECharacteristicCallbacks
     std::string message = pCharacteristic->getValue();
     if (message.length() > 0)
     {
-      char msg[10];
+      char msg[11];
       // make a measurement of the vertical laser
       if (message[0] == 'V')
       {
-        measurement m = laserV.measure();
+        while (Serial1.available())
+        {
+          Serial1.read();
+        }
+        int16_t distance = laserV.getDistance();
+        float range;
+        if (distance > 0)
+        {
+          range = distance / 100.0;
+        }
         Serial.print("vertical: ");
-        Serial.println(m.range);
-        sprintf(msg, "%2.3f", m.range);
+        Serial.println(range);
+
+        sprintf(msg, "%2.2f", range);
       }
       // make a measurement of the horizontal laser
       else if (message[0] == 'H')
       {
-        measurement m = laserH.measure();
+        while (Serial2.available())
+        {
+          Serial2.read();
+        }
+        int16_t distance = laserH.getDistance();
+        float range;
+        if (distance > 0)
+        {
+          range = distance / 100.0;
+        }
         Serial.print("horizontal: ");
-        Serial.println(m.range);
-        sprintf(msg, "%2.3f", m.range);
+        Serial.println(range);
+
+        sprintf(msg, "%2.2f", range);
       }
       // disable the motor to save power
       else if (message[0] == 'D')
@@ -70,27 +93,36 @@ class ParseReceive : public BLECharacteristicCallbacks
       else if (message[0] == 'E')
       {
         stepper.enable();
+        angle = 0;
       }
       // rotate the stepper motor to a given angle,
       // and then make a measurement of the horizontal laser
       else if (message[0] == 'R')
       {
         // These commands are the form R90, or R-30, to rotate to +90 degrees or -30 degrees
+        // we constrain ourselves to stay within +/-180 degrees
         int new_angle = String(message.c_str()).substring(1).toInt();
         Serial.print("new angle: ");
         Serial.println(new_angle);
-        // we constrain ourselves to stay within +/-180 degrees
-        if (0 <= new_angle && new_angle <= 360)
+        stepper.rotate(new_angle - angle);
+        angle = new_angle;
+        Serial.print("angle: ");
+        Serial.print(angle);
+        while (Serial2.available())
         {
-          stepper.rotate(new_angle - angle);
-          angle = new_angle;
-          Serial.print("angle: ");
-          Serial.println(angle);
-          measurement m = laserH.measure();
-          Serial.print("range: ");
-          Serial.println(m.range);
-          sprintf(msg, "%d:%2.3f", angle, m.range);
+          Serial2.read();
         }
+        int16_t distance = laserH.getDistance();
+        float range;
+        if (distance > 0)
+        {
+          range = distance / 100.0;
+        }
+
+        Serial.print("  range: ");
+        Serial.println(range);
+        sprintf(msg, "%d:%2.2f", angle, range);
+        Serial.println(msg);
       }
       TX_Characteristic->setValue(msg);
     }
@@ -128,9 +160,22 @@ void setupBLE()
 
 void setup()
 {
+  // setup stepper motor
+  // enable microsteps
+  pinMode(STEPPER_MS, OUTPUT);
+  digitalWrite(STEPPER_MS, HIGH);
   // setup the stepper motor
   stepper.begin(MOTOR_RPM, MOTOR_MICROSTEPS);
   stepper.disable();
+
+  // setup lasers
+  // start serial ports
+  Serial1.begin(TFMINI_BAUDRATE, SERIAL_8N1, LaserV_RX, LaserV_TX);
+  Serial2.begin(TFMINI_BAUDRATE, SERIAL_8N1, LaserH_RX, LaserH_TX);
+  laserV.begin(&Serial1);
+  delay(100);
+  laserH.begin(&Serial2);
+  delay(100);
 
   // setup bluetooth
   setupBLE();
@@ -138,7 +183,17 @@ void setup()
   // begin serial communication (only needed for debugging))
   Serial.begin(115200);
   Serial.println("Starting Volaser");
-  laserV.measure();
 }
 
-void loop() {}
+void loop()
+{
+  while (Serial1.available())
+  {
+    Serial1.read();
+  }
+  while (Serial2.available())
+  {
+    Serial2.read();
+  }
+  delay(1000);
+}
