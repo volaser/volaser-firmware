@@ -16,4 +16,5 @@ Install support for ESP32 boards using the Arduino IDE Boards Manager
 - Select the "SparkFun ESP32 Thing" from Tools > Board (or a different board, if you are using a different ESP32 microcontroller).
 - Compile the sketch with Sketch > Verify/Compile. If everything is correct it should compile at this point without any errors.
 - Plug in the SparkFun ESP32 microcontroller to your computer using a microusb cable. Select the appropriate port from Tools > Port. Upload the sketch to the microcontroller with Sketch > Upload.
+  - If the device does not show up under ports, it might have to install drivers. Open the Device Manager and see if the device shows up there. It might take a minute to install the various drivers. Then close the Arduino IDE and reopen it.
 - The device should now be detectable by the volaser app via bluetooth.
