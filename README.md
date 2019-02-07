@@ -11,6 +11,7 @@ Install support for ESP32 boards using the Arduino IDE Boards Manager
 - Start Arduino and open Preferences window.
 - Enter ```https://dl.espressif.com/dl/package_esp32_index.json``` into *Additional Board Manager URLs* field. You can add multiple URLs, separating them with commas.
 - Open Boards Manager from Tools > Board menu and install *esp32* platform (and don't forget to select your ESP32 board from Tools > Board menu after installation).
+- Open the Libary Manager with Tools > Manage Libraries and install the TFmini library (this is to talk to the TFmini laser modules).
 
 # Installation
 - Select the "SparkFun ESP32 Thing" from Tools > Board (or a different board, if you are using a different ESP32 microcontroller).
