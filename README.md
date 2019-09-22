@@ -12,6 +12,7 @@ The easiest way to compile and install the firmware is to use the Arduino IDE. T
 - Start Arduino and open Preferences window.
 - Enter ```https://dl.espressif.com/dl/package_esp32_index.json``` into *Additional Board Manager URLs* field. You can add multiple URLs, separating them with commas.
 - Open Boards Manager from Tools > Board menu and install *esp32* platform (and don't forget to select your ESP32 board from Tools > Board menu after installation).
+- Open the Libary Manager with Tools > Manage Libraries and install the TFmini library (this is to talk to the TFmini laser modules).
 
 ## Install required libraries
 
@@ -27,5 +28,5 @@ for it's serial interface, and the [TfMini](https://github.com/opensensinglab/tf
 - Select the "SparkFun ESP32 Thing" from Tools > Board (or a different board, if you are using a different ESP32 microcontroller).
 - Compile the sketch with Sketch > Verify/Compile. If everything is correct it should compile at this point without any errors.
 - Plug in the SparkFun ESP32 microcontroller to your computer using a microusb cable. Select the appropriate port from Tools > Port. Upload the sketch to the microcontroller with Sketch > Upload.
+  - If the device does not show up under ports, it might have to install drivers. Open the Device Manager and see if the device shows up there. It might take a minute to install the various drivers. Then close the Arduino IDE and reopen it.
 - The device should now be detectable by the volaser app via bluetooth.
-  
