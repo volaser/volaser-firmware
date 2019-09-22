@@ -56,6 +56,7 @@ void setup()
   laser.begin(&Serial1);
   delay(100);
   laser.setMeasurementMode(MIDDLE);
+  laser.setSignalThreshold(20, 956);
 
   pinMode(LED_BUILTIN, OUTPUT);
   blink();
